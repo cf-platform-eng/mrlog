@@ -26,7 +26,7 @@ var _ = Describe("Report version", func() {
 
 	steps.Define(func(define Definitions) {
 		var (
-			mrlogPath string
+			mrlogPath      string
 			commandSession *gexec.Session
 		)
 
@@ -36,7 +36,7 @@ var _ = Describe("Report version", func() {
 				"github.com/cf-platform-eng/mrlog/cmd/mrlog",
 				"-ldflags",
 				"-X github.com/cf-platform-eng/mrlog/version.Version=1.0.1",
-				)
+			)
 			Expect(err).NotTo(HaveOccurred())
 		}, func() {
 			gexec.CleanupBuildArtifacts()

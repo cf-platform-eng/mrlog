@@ -15,7 +15,7 @@ var _ = Describe("Version", func() {
 
 		BeforeEach(func() {
 			originalVersion = version.Version
-		    version.Version = "9.9.9"
+			version.Version = "9.9.9"
 		})
 		AfterEach(func() {
 			version.Version = originalVersion
@@ -28,7 +28,7 @@ var _ = Describe("Version", func() {
 			}
 
 			Expect(context.Execute([]string{})).To(Succeed())
-		    Expect(out).To(Say("mrlog version: 9.9.9"))
+			Expect(out).To(Say("mrlog version: 9.9.9"))
 		})
 
 	})
