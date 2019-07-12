@@ -7,6 +7,7 @@ import (
 
 	"github.com/cf-platform-eng/mrlog/clock"
 	"github.com/cf-platform-eng/mrlog/mrl"
+	"github.com/pkg/errors"
 )
 
 type DependencyOpt struct {
@@ -16,7 +17,27 @@ type DependencyOpt struct {
 	Clock    clock.Clock
 }
 
+const InsufficientMessage = "Insufficient data to identify a dependency\n" +
+	"\n" +
+	"available flags:\n" +
+	"  --filename   name of the dependency, assuming it contains the version\n" +
+	"  --hash       repeatable hash of the dependency"
+
+func (opts *DependencyOpt) hasSufficientIdentity() bool {
+	if opts.Hash != "" {
+		return true
+	}
+	if opts.Filename != "" {
+		return true
+	}
+	return false
+}
+
 func (opts *DependencyOpt) Execute(args []string) error {
+	if !opts.hasSufficientIdentity() {
+		return errors.New(InsufficientMessage)
+	}
+
 	humanLog := fmt.Sprintf("dependency reported. Filename: %s, Hash: %s", opts.Filename, opts.Hash)
 
 	_, err := fmt.Fprint(opts.Out, humanLog)

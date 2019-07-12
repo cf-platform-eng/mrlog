@@ -31,6 +31,14 @@ var _ = Describe("Dependency", func() {
 		}
 	})
 
+	Context("dependency without identifying information", func() {
+		It("logs the dependency", func() {
+			err := context.Execute([]string{})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(dependency.InsufficientMessage))
+		})
+	})
+
 	Context("dependency with a filename and hash", func() {
 		BeforeEach(func() {
 			context.Filename = "my-file"

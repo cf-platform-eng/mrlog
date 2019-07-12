@@ -4,7 +4,6 @@ package features_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"os/exec"
 	"regexp"
 	"time"
@@ -16,8 +15,6 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-// go:generate
-
 var _ = Describe("log a dependency", func() {
 	steps := NewSteps()
 
@@ -28,6 +25,15 @@ var _ = Describe("log a dependency", func() {
 
 		steps.Then("the command exits without error")
 		steps.And("the result is a machine and human readable stemcell dependency log line")
+	})
+
+	Scenario("insufficient input to identify a dependency", func() {
+		steps.Given("I have the mrlog binary")
+
+		steps.When("I log a dependency without sufficient data to identify it")
+
+		steps.Then("the command exits with an error")
+		steps.And("the error explains what I need to provide")
 	})
 
 	steps.Define(func(define Definitions) {
@@ -45,7 +51,23 @@ var _ = Describe("log a dependency", func() {
 		})
 
 		define.When(`^I log a stemcell dependency`, func() {
-			logCommand := exec.Command(mrlogPath, "dependency", "--filename", "light-bosh-stemcell-170.107-google-kvm-ubuntu-xenial-go_agent.tgz", "--hash", "a5387ed1ea4c61d2f7c13dfa2aa5bf6978d5e1c7")
+			logCommand := exec.Command(
+				mrlogPath,
+				"dependency",
+				"--filename",
+				"light-bosh-stemcell-170.107-google-kvm-ubuntu-xenial-go_agent.tgz",
+				"--hash",
+				"a5387ed1ea4c61d2f7c13dfa2aa5bf6978d5e1c7",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a dependency without sufficient data to identify it$`, func() {
+			logCommand := exec.Command(mrlogPath, "dependency")
+
 			var err error
 			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
@@ -55,11 +77,13 @@ var _ = Describe("log a dependency", func() {
 			Eventually(commandSession).Should(gexec.Exit(0))
 		})
 
+		define.Then(`^the command exits with an error$`, func() {
+			Eventually(commandSession).Should(gexec.Exit(1))
+		})
+
 		define.Then(`^the result is a machine and human readable stemcell dependency log line$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("dependency reported. Filename: light-bosh-stemcell-170.107-google-kvm-ubuntu-xenial-go_agent.tgz, Hash: a5387ed1ea4c61d2f7c13dfa2aa5bf6978d5e1c7"))
-
-			fmt.Println(string(commandSession.Out.Contents()))
 
 			mrRE := regexp.MustCompile(`\sMRL:(.*)$`)
 			machineReadableString := mrRE.FindSubmatch(commandSession.Out.Contents())
@@ -80,6 +104,21 @@ var _ = Describe("log a dependency", func() {
 			Expect(machineReadable.Filename).To(Equal("light-bosh-stemcell-170.107-google-kvm-ubuntu-xenial-go_agent.tgz"))
 			Expect(machineReadable.Hash).To(Equal("a5387ed1ea4c61d2f7c13dfa2aa5bf6978d5e1c7"))
 			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
+		})
+
+		define.Then(`^the error explains what I need to provide$`, func() {
+			Eventually(commandSession.Err).Should(
+				Say("Insufficient data to identify a dependency"))
+			Eventually(commandSession.Err).Should(
+				Say("available flags:"))
+			Eventually(commandSession.Err).Should(
+				Say("--filename"))
+			Eventually(commandSession.Err).Should(
+				Say("name of the dependency, assuming it contains the version"))
+			Eventually(commandSession.Err).Should(
+				Say("--hash"))
+			Eventually(commandSession.Err).Should(
+				Say("repeatable hash of the dependency"))
 		})
 	})
 })
