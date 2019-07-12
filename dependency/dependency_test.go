@@ -72,4 +72,40 @@ var _ = Describe("Dependency", func() {
 
 		})
 	})
+	Context("dependency without every flag", func() {
+		BeforeEach(func() {
+			context.Name = "some-file.tgz"
+		})
+		It("Doesn't render missing version and hash", func() {
+			Expect(context.Execute([]string{})).To(Succeed())
+			Expect(out).To(Say("dependency reported."))
+			Expect(out).To(Say("Name: some-file.tgz"))
+			Expect(out).To(Not(Say("Hash: ")))
+			Expect(out).To(Not(Say("Version: ")))
+			Expect(out).To(Say("MRL:"))
+			Expect(out).To(Not(Say(`"Hash"`)))
+			Expect(out).To(Not(Say(`"Version"`)))
+
+			output := out.Contents()
+			Expect(bytes.Count(output, []byte("\n"))).To(Equal(0))
+
+			mrRE := regexp.MustCompile(`\sMRL:(.*)$`)
+			machineReadableString := mrRE.FindSubmatch(output)
+
+			Expect(machineReadableString).To(HaveLen(2))
+
+			machineReadable := &struct {
+				Type string    `json:"type"`
+				Name string    `json:"name"`
+				Time time.Time `json:"time"`
+			}{}
+
+			err := json.Unmarshal(machineReadableString[1], machineReadable)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(machineReadable.Type).To(Equal("dependency"))
+			Expect(machineReadable.Name).To(Equal("some-file.tgz"))
+			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
+		})
+	})
 })
