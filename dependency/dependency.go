@@ -21,16 +21,24 @@ type DependencyOpt struct {
 	Clock clock.Clock
 }
 
-func (opts *DependencyOpt) Execute(args []string) error {
+func (opts *DependencyOpt) humanReadableOutput() string {
 	humanLog := fmt.Sprintf("dependency reported. "+
-		"Name: %s "+
-		"Hash: %s "+
-		"Version: %s",
-		opts.Name,
-		opts.Hash,
-		opts.Version)
+		"Name: %s",
+		opts.Name)
 
-	_, err := fmt.Fprint(opts.Out, humanLog)
+	if opts.Hash != "" {
+		humanLog += fmt.Sprintf(" Hash: %s ", opts.Hash)
+	}
+	if opts.Version != "" {
+		humanLog += fmt.Sprintf(" Version: %s", opts.Version)
+	}
+
+	return humanLog
+}
+
+func (opts *DependencyOpt) Execute(args []string) error {
+
+	_, err := fmt.Fprint(opts.Out, opts.humanReadableOutput())
 	if err != nil { // !branch-not-tested
 		return err
 	}
