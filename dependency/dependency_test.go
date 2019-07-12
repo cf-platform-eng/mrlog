@@ -3,6 +3,7 @@ package dependency_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -31,23 +32,47 @@ var _ = Describe("Dependency", func() {
 		}
 	})
 
-	Context("dependency without identifying information", func() {
-		It("logs the dependency", func() {
-			err := context.Execute([]string{})
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal(dependency.InsufficientMessage))
+	Describe("dependency without sufficient identifying information", func() {
+		Context("dependency without any identifying information", func() {
+			It("tells me what's missing", func() {
+				err := context.Execute([]string{})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(dependency.InsufficientMessage))
+			})
 		})
+
+		Context("dependency with sufficient identifying information", func() {
+			It("logs the dependency", func() {
+				sufficientConfigs := []dependency.Identities{
+					{Hash: "some-hash"},
+					{Name: "some-name"},
+					{Version: "some-version"},
+				}
+
+				for _, config := range sufficientConfigs {
+					_, err := fmt.Fprintf(GinkgoWriter, "Testing with config: %+v\n", config)
+					Expect(err).NotTo(HaveOccurred())
+					context.Identities = config
+					Expect(context.Execute([]string{})).To(Succeed())
+				}
+			})
+		})
+
 	})
 
 	Context("dependency with a filename and hash", func() {
 		BeforeEach(func() {
-			context.Filename = "my-file"
 			context.Hash = "112233445566778899AABBCCDDEEFF"
+			context.Version = "1.2.3"
+			context.Name = "some-file.tgz"
 		})
 
 		It("logs the dependency", func() {
 			Expect(context.Execute([]string{})).To(Succeed())
-			Expect(out).To(Say("dependency reported. Filename: my-file, Hash: 112233445566778899AABBCCDDEEFF"))
+			Expect(out).To(Say("dependency reported."))
+			Expect(out).To(Say("Name: some-file.tgz"))
+			Expect(out).To(Say("Hash: 112233445566778899AABBCCDDEEFF"))
+			Expect(out).To(Say("Version: 1.2.3"))
 
 			output := out.Contents()
 			Expect(bytes.Count(output, []byte("\n"))).To(Equal(0))
@@ -59,8 +84,9 @@ var _ = Describe("Dependency", func() {
 
 			machineReadable := &struct {
 				Type     string    `json:"type"`
-				Filename string    `json:"filename"`
 				Hash     string    `json:"hash"`
+				Name     string    `json:"name"`
+				Version  string    `json:"version"`
 				Time     time.Time `json:"time"`
 			}{}
 
@@ -68,8 +94,9 @@ var _ = Describe("Dependency", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(machineReadable.Type).To(Equal("dependency"))
-			Expect(machineReadable.Filename).To(Equal("my-file"))
 			Expect(machineReadable.Hash).To(Equal("112233445566778899AABBCCDDEEFF"))
+			Expect(machineReadable.Version).To(Equal("1.2.3"))
+			Expect(machineReadable.Name).To(Equal("some-file.tgz"))
 			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
 
 		})

@@ -10,26 +10,36 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Identities struct {
+	Hash     string `long:"hash" description:"hash sum of the dependency, if it has one"`
+	Name     string `long:"name" description:"name of the dependency, if it has one"`
+	Version  string `long:"version" description:"version string for the dependency, if it has one"`
+}
+
 type DependencyOpt struct {
-	Filename string `long:"filename" description:"name of the dependency if it is a file"`
-	Hash     string `long:"hash" description:"hash sum of the dependency if it has one"`
-	Out      io.Writer
-	Clock    clock.Clock
+	Identities
+	Out   io.Writer
+	Clock clock.Clock
 }
 
 const InsufficientMessage = "Insufficient data to identify a dependency\n" +
 	"\n" +
-	"available flags:\n" +
-	"  --filename   name of the dependency, assuming it contains the version\n" +
-	"  --hash       repeatable hash of the dependency"
+	"must use at least one of:\n" +
+	"  --name       name or filename\n" +
+	"  --version\n" +
+	"  --hash"
 
 func (opts *DependencyOpt) hasSufficientIdentity() bool {
 	if opts.Hash != "" {
 		return true
 	}
-	if opts.Filename != "" {
+	if opts.Name != "" {
 		return true
 	}
+	if opts.Version != "" {
+		return true
+	}
+
 	return false
 }
 
@@ -37,8 +47,13 @@ func (opts *DependencyOpt) Execute(args []string) error {
 	if !opts.hasSufficientIdentity() {
 		return errors.New(InsufficientMessage)
 	}
-
-	humanLog := fmt.Sprintf("dependency reported. Filename: %s, Hash: %s", opts.Filename, opts.Hash)
+	humanLog := fmt.Sprintf("dependency reported. "+
+		"Name: %s "+
+		"Hash: %s "+
+		"Version: %s",
+		opts.Name,
+		opts.Hash,
+		opts.Version)
 
 	_, err := fmt.Fprint(opts.Out, humanLog)
 	if err != nil { // !branch-not-tested
@@ -47,8 +62,9 @@ func (opts *DependencyOpt) Execute(args []string) error {
 
 	machineLog := &mrl.MachineReadableLog{
 		Type:     "dependency",
-		Filename: opts.Filename,
 		Hash:     opts.Hash,
+		Version:  opts.Version,
+		Name:     opts.Name,
 		Time:     opts.Clock.Now(),
 	}
 
