@@ -36,13 +36,13 @@ var _ = Describe("log a dependency", func() {
 		steps.And("the result is a machine and human readable executable dependency log line")
 	})
 
-	Scenario("insufficient input to identify a dependency", func() {
+	Scenario("name must be provided for a dependency", func() {
 		steps.Given("I have the mrlog binary")
 
-		steps.When("I log a dependency without sufficient data to identify it")
+		steps.When("I log a dependency without a name")
 
 		steps.Then("the command exits with an error")
-		steps.And("the error explains what I need to provide")
+		steps.And("the error telling me to provide a name")
 	})
 
 	steps.Define(func(define Definitions) {
@@ -74,8 +74,8 @@ var _ = Describe("log a dependency", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		define.When(`^I log a dependency without sufficient data to identify it$`, func() {
-			logCommand := exec.Command(mrlogPath, "dependency")
+		define.When(`^I log a dependency without a name$`, func() {
+			logCommand := exec.Command(mrlogPath, "dependency", "--hash", "1234HASH6789")
 
 			var err error
 			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
@@ -157,19 +157,9 @@ var _ = Describe("log a dependency", func() {
 
 		})
 
-		define.Then(`^the error explains what I need to provide$`, func() {
+		define.Then(`^the error telling me to provide a name$`, func() {
 			Eventually(commandSession.Err).Should(
-				Say("Insufficient data to identify a dependency"))
-			Eventually(commandSession.Err).Should(
-				Say("must use at least one of:"))
-			Eventually(commandSession.Err).Should(
-				Say("--name"))
-			Eventually(commandSession.Err).Should(
-				Say("name or filename"))
-			Eventually(commandSession.Err).Should(
-				Say("--version"))
-			Eventually(commandSession.Err).Should(
-				Say("--hash"))
+				Say("the required flag `--name' was not specified"))
 		})
 
 	})

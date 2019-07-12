@@ -3,7 +3,6 @@ package dependency_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"time"
 
@@ -32,35 +31,7 @@ var _ = Describe("Dependency", func() {
 		}
 	})
 
-	Describe("dependency without sufficient identifying information", func() {
-		Context("dependency without any identifying information", func() {
-			It("tells me what's missing", func() {
-				err := context.Execute([]string{})
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(dependency.InsufficientMessage))
-			})
-		})
-
-		Context("dependency with sufficient identifying information", func() {
-			It("logs the dependency", func() {
-				sufficientConfigs := []dependency.Identities{
-					{Hash: "some-hash"},
-					{Name: "some-name"},
-					{Version: "some-version"},
-				}
-
-				for _, config := range sufficientConfigs {
-					_, err := fmt.Fprintf(GinkgoWriter, "Testing with config: %+v\n", config)
-					Expect(err).NotTo(HaveOccurred())
-					context.Identities = config
-					Expect(context.Execute([]string{})).To(Succeed())
-				}
-			})
-		})
-
-	})
-
-	Context("dependency with a filename and hash", func() {
+	Context("dependency with every flag", func() {
 		BeforeEach(func() {
 			context.Hash = "112233445566778899AABBCCDDEEFF"
 			context.Version = "1.2.3"
@@ -83,11 +54,11 @@ var _ = Describe("Dependency", func() {
 			Expect(machineReadableString).To(HaveLen(2))
 
 			machineReadable := &struct {
-				Type     string    `json:"type"`
-				Hash     string    `json:"hash"`
-				Name     string    `json:"name"`
-				Version  string    `json:"version"`
-				Time     time.Time `json:"time"`
+				Type    string    `json:"type"`
+				Hash    string    `json:"hash"`
+				Name    string    `json:"name"`
+				Version string    `json:"version"`
+				Time    time.Time `json:"time"`
 			}{}
 
 			err := json.Unmarshal(machineReadableString[1], machineReadable)

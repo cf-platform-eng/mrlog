@@ -7,13 +7,12 @@ import (
 
 	"github.com/cf-platform-eng/mrlog/clock"
 	"github.com/cf-platform-eng/mrlog/mrl"
-	"github.com/pkg/errors"
 )
 
 type Identities struct {
-	Hash     string `long:"hash" description:"hash sum of the dependency, if it has one"`
-	Name     string `long:"name" description:"name of the dependency, if it has one"`
-	Version  string `long:"version" description:"version string for the dependency, if it has one"`
+	Hash    string `long:"hash" description:"hash sum of the dependency, if it has one"`
+	Name    string `long:"name" description:"name of the dependency, if it has one" required:"true"`
+	Version string `long:"version" description:"version string for the dependency, if it has one"`
 }
 
 type DependencyOpt struct {
@@ -22,31 +21,7 @@ type DependencyOpt struct {
 	Clock clock.Clock
 }
 
-const InsufficientMessage = "Insufficient data to identify a dependency\n" +
-	"\n" +
-	"must use at least one of:\n" +
-	"  --name       name or filename\n" +
-	"  --version\n" +
-	"  --hash"
-
-func (opts *DependencyOpt) hasSufficientIdentity() bool {
-	if opts.Hash != "" {
-		return true
-	}
-	if opts.Name != "" {
-		return true
-	}
-	if opts.Version != "" {
-		return true
-	}
-
-	return false
-}
-
 func (opts *DependencyOpt) Execute(args []string) error {
-	if !opts.hasSufficientIdentity() {
-		return errors.New(InsufficientMessage)
-	}
 	humanLog := fmt.Sprintf("dependency reported. "+
 		"Name: %s "+
 		"Hash: %s "+
@@ -61,11 +36,11 @@ func (opts *DependencyOpt) Execute(args []string) error {
 	}
 
 	machineLog := &mrl.MachineReadableLog{
-		Type:     "dependency",
-		Hash:     opts.Hash,
-		Version:  opts.Version,
-		Name:     opts.Name,
-		Time:     opts.Clock.Now(),
+		Type:    "dependency",
+		Hash:    opts.Hash,
+		Version: opts.Version,
+		Name:    opts.Name,
+		Time:    opts.Clock.Now(),
 	}
 
 	machineLogJSON, err := json.Marshal(machineLog)
