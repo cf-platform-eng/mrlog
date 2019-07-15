@@ -18,31 +18,13 @@ import (
 var _ = Describe("log a dependency", func() {
 	steps := NewSteps()
 
-	Scenario("logging stemcell dependencies", func() {
+	Scenario("logging a dependency", func() {
 		steps.Given("I have the mrlog binary")
 
-		steps.When("I log a stemcell dependency")
+		steps.When("I log a dependency")
 
 		steps.Then("the command exits without error")
-		steps.And("the result is a machine and human readable stemcell dependency log line")
-	})
-
-	Scenario("logging executable dependencies", func() {
-		steps.Given("I have the mrlog binary")
-
-		steps.When("I log an executable dependency")
-
-		steps.Then("the command exits without error")
-		steps.And("the result is a machine and human readable executable dependency log line")
-	})
-
-	Scenario("name must be provided for a dependency", func() {
-		steps.Given("I have the mrlog binary")
-
-		steps.When("I log a dependency without a name")
-
-		steps.Then("the command exits with an error")
-		steps.And("the error telling me to provide a name")
+		steps.And("the result is a machine and human readable dependency log line")
 	})
 
 	steps.Define(func(define Definitions) {
@@ -59,14 +41,14 @@ var _ = Describe("log a dependency", func() {
 			gexec.CleanupBuildArtifacts()
 		})
 
-		define.When(`^I log a stemcell dependency`, func() {
+		define.When(`^I log a dependency`, func() {
 			logCommand := exec.Command(
 				mrlogPath,
 				"dependency",
 				"--name",
-				"light-bosh-stemcell-170.107-google-kvm-ubuntu-xenial-go_agent.tgz",
-				"--hash",
-				"a5387ed1ea4c61d2f7c13dfa2aa5bf6978d5e1c7",
+				"marman",
+				"--version",
+				"1.2.3",
 			)
 
 			var err error
@@ -82,14 +64,6 @@ var _ = Describe("log a dependency", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		define.When(`^I log an executable dependency$`, func() {
-			logCommand := exec.Command(mrlogPath, "dependency", "--name", "marman", "--version", "2.0.1")
-
-			var err error
-			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		define.Then(`^the command exits without error$`, func() {
 			Eventually(commandSession).Should(gexec.Exit(0))
 		})
@@ -98,44 +72,9 @@ var _ = Describe("log a dependency", func() {
 			Eventually(commandSession).Should(gexec.Exit(1))
 		})
 
-		define.Then(`^the result is a machine and human readable stemcell dependency log line$`, func() {
+		define.Then(`^the result is a machine and human readable dependency log line$`, func() {
 			Eventually(commandSession.Out).Should(
-				Say("dependency reported."))
-			Eventually(commandSession.Out).Should(
-				Say("Name: light-bosh-stemcell-170.107-google-kvm-ubuntu-xenial-go_agent.tgz"))
-			Eventually(commandSession.Out).Should(
-				Say("Hash: a5387ed1ea4c61d2f7c13dfa2aa5bf6978d5e1c7"))
-
-			contents := commandSession.Out.Contents()
-
-			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
-			Expect(mrRE.Match(contents)).To(BeTrue())
-
-			machineReadableMatches := mrRE.FindSubmatch(contents)
-
-			machineReadable := &struct {
-				Type string `json:"type"`
-				Name string `json:"name"`
-				Hash string `json:"hash"`
-				Time time.Time
-			}{}
-
-			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(machineReadable.Type).To(Equal("dependency"))
-			Expect(machineReadable.Name).To(Equal("light-bosh-stemcell-170.107-google-kvm-ubuntu-xenial-go_agent.tgz"))
-			Expect(machineReadable.Hash).To(Equal("a5387ed1ea4c61d2f7c13dfa2aa5bf6978d5e1c7"))
-			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
-		})
-
-		define.Then("^the result is a machine and human readable executable dependency log line$", func() {
-			Eventually(commandSession.Out).Should(
-				Say("dependency reported."))
-			Eventually(commandSession.Out).Should(
-				Say("Name: marman"))
-			Eventually(commandSession.Out).Should(
-				Say("Version: 2.0.1"))
+				Say("dependency: 'marman' version '1.2.3'"))
 
 			contents := commandSession.Out.Contents()
 
@@ -156,7 +95,7 @@ var _ = Describe("log a dependency", func() {
 
 			Expect(machineReadable.Type).To(Equal("dependency"))
 			Expect(machineReadable.Name).To(Equal("marman"))
-			Expect(machineReadable.Version).To(Equal("2.0.1"))
+			Expect(machineReadable.Version).To(Equal("1.2.3"))
 			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
 		})
 

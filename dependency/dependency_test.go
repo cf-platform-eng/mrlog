@@ -33,17 +33,13 @@ var _ = Describe("Dependency", func() {
 
 	Context("dependency with every flag", func() {
 		BeforeEach(func() {
-			context.Hash = "112233445566778899AABBCCDDEEFF"
 			context.Version = "1.2.3"
 			context.Name = "some-file.tgz"
 		})
 
 		It("logs the dependency", func() {
 			Expect(context.Execute([]string{})).To(Succeed())
-			Expect(out).To(Say("dependency reported."))
-			Expect(out).To(Say("Name: some-file.tgz"))
-			Expect(out).To(Say("Hash: 112233445566778899AABBCCDDEEFF"))
-			Expect(out).To(Say("Version: 1.2.3"))
+			Expect(out).To(Say("dependency: 'some-file.tgz' version '1.2.3'"))
 
 			output := out.Contents()
 			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
@@ -54,7 +50,6 @@ var _ = Describe("Dependency", func() {
 
 			machineReadable := &struct {
 				Type    string    `json:"type"`
-				Hash    string    `json:"hash"`
 				Name    string    `json:"name"`
 				Version string    `json:"version"`
 				Time    time.Time `json:"time"`
@@ -64,46 +59,10 @@ var _ = Describe("Dependency", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(machineReadable.Type).To(Equal("dependency"))
-			Expect(machineReadable.Hash).To(Equal("112233445566778899AABBCCDDEEFF"))
 			Expect(machineReadable.Version).To(Equal("1.2.3"))
 			Expect(machineReadable.Name).To(Equal("some-file.tgz"))
 			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
 
-		})
-	})
-	Context("dependency without every flag", func() {
-		BeforeEach(func() {
-			context.Name = "some-file.tgz"
-		})
-		It("Doesn't render missing version and hash", func() {
-			Expect(context.Execute([]string{})).To(Succeed())
-			Expect(out).To(Say("dependency reported."))
-			Expect(out).To(Say("Name: some-file.tgz"))
-			Expect(out).To(Not(Say("Hash: ")))
-			Expect(out).To(Not(Say("Version: ")))
-			Expect(out).To(Say("MRL:"))
-			Expect(out).To(Not(Say(`"Hash"`)))
-			Expect(out).To(Not(Say(`"Version"`)))
-
-			output := out.Contents()
-			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
-
-			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
-
-			machineReadableMatches := mrRE.FindSubmatch(output)
-
-			machineReadable := &struct {
-				Type string    `json:"type"`
-				Name string    `json:"name"`
-				Time time.Time `json:"time"`
-			}{}
-
-			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(machineReadable.Type).To(Equal("dependency"))
-			Expect(machineReadable.Name).To(Equal("some-file.tgz"))
-			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
 		})
 	})
 })
