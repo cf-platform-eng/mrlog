@@ -56,7 +56,7 @@ func (opts *DependencyOpt) Execute(args []string) error {
 		return err
 	}
 
-	_, err = fmt.Fprint(opts.Out, " MRL:"+string(machineLogJSON))
+	_, err = fmt.Fprintf(opts.Out, " MRL:%s\n", string(machineLogJSON))
 	if err != nil { // !branch-not-tested
 		return err
 	}

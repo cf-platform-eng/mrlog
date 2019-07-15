@@ -106,10 +106,12 @@ var _ = Describe("log a dependency", func() {
 			Eventually(commandSession.Out).Should(
 				Say("Hash: a5387ed1ea4c61d2f7c13dfa2aa5bf6978d5e1c7"))
 
-			mrRE := regexp.MustCompile(`\sMRL:(.*)$`)
-			machineReadableString := mrRE.FindSubmatch(commandSession.Out.Contents())
+			contents := commandSession.Out.Contents()
 
-			Expect(machineReadableString).To(HaveLen(2))
+			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
+			Expect(mrRE.Match(contents)).To(BeTrue())
+
+			machineReadableMatches := mrRE.FindSubmatch(contents)
 
 			machineReadable := &struct {
 				Type string `json:"type"`
@@ -118,7 +120,7 @@ var _ = Describe("log a dependency", func() {
 				Time time.Time
 			}{}
 
-			err := json.Unmarshal(machineReadableString[1], machineReadable)
+			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(machineReadable.Type).To(Equal("dependency"))
@@ -135,10 +137,12 @@ var _ = Describe("log a dependency", func() {
 			Eventually(commandSession.Out).Should(
 				Say("Version: 2.0.1"))
 
-			mrRE := regexp.MustCompile(`\sMRL:(.*)$`)
-			machineReadableString := mrRE.FindSubmatch(commandSession.Out.Contents())
+			contents := commandSession.Out.Contents()
 
-			Expect(machineReadableString).To(HaveLen(2))
+			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
+			Expect(mrRE.Match(contents)).To(BeTrue())
+
+			machineReadableMatches := mrRE.FindSubmatch(contents)
 
 			machineReadable := &struct {
 				Type    string `json:"type"`
@@ -147,14 +151,13 @@ var _ = Describe("log a dependency", func() {
 				Time    time.Time
 			}{}
 
-			err := json.Unmarshal(machineReadableString[1], machineReadable)
+			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(machineReadable.Type).To(Equal("dependency"))
 			Expect(machineReadable.Name).To(Equal("marman"))
 			Expect(machineReadable.Version).To(Equal("2.0.1"))
 			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
-
 		})
 
 		define.Then(`^the error telling me to provide a name$`, func() {

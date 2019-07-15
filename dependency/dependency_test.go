@@ -46,12 +46,11 @@ var _ = Describe("Dependency", func() {
 			Expect(out).To(Say("Version: 1.2.3"))
 
 			output := out.Contents()
-			Expect(bytes.Count(output, []byte("\n"))).To(Equal(0))
+			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
 
-			mrRE := regexp.MustCompile(`\sMRL:(.*)$`)
-			machineReadableString := mrRE.FindSubmatch(output)
+			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
 
-			Expect(machineReadableString).To(HaveLen(2))
+			machineReadableMatches := mrRE.FindSubmatch(output)
 
 			machineReadable := &struct {
 				Type    string    `json:"type"`
@@ -61,7 +60,7 @@ var _ = Describe("Dependency", func() {
 				Time    time.Time `json:"time"`
 			}{}
 
-			err := json.Unmarshal(machineReadableString[1], machineReadable)
+			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(machineReadable.Type).To(Equal("dependency"))
@@ -87,12 +86,11 @@ var _ = Describe("Dependency", func() {
 			Expect(out).To(Not(Say(`"Version"`)))
 
 			output := out.Contents()
-			Expect(bytes.Count(output, []byte("\n"))).To(Equal(0))
+			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
 
-			mrRE := regexp.MustCompile(`\sMRL:(.*)$`)
-			machineReadableString := mrRE.FindSubmatch(output)
+			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
 
-			Expect(machineReadableString).To(HaveLen(2))
+			machineReadableMatches := mrRE.FindSubmatch(output)
 
 			machineReadable := &struct {
 				Type string    `json:"type"`
@@ -100,7 +98,7 @@ var _ = Describe("Dependency", func() {
 				Time time.Time `json:"time"`
 			}{}
 
-			err := json.Unmarshal(machineReadableString[1], machineReadable)
+			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(machineReadable.Type).To(Equal("dependency"))
