@@ -15,10 +15,10 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("log a section boundaries", func() {
+var _ = Describe("log section boundaries", func() {
 	steps := NewSteps()
 
-	Scenario("logging beggining of a section", func() {
+	Scenario("logging beginning of a section", func() {
 		steps.Given("I have the mrlog binary")
 
 		steps.When("I log a section start")

@@ -3,6 +3,7 @@ package section
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 
 	"github.com/cf-platform-eng/mrlog/clock"
@@ -21,13 +22,13 @@ type SectionOpt struct {
 }
 
 func (opts *SectionOpt) Execute(args []string) error {
-	humanReadable := fmt.Sprintf("section-%s: %s",
+	humanReadable := fmt.Sprintf("section-%s: '%s'",
 		opts.Type,
 		opts.Name)
 
 	_, err := fmt.Fprint(opts.Out, humanReadable)
-	if err != nil { // !branch-not-tested
-		return err
+	if err != nil {
+		return errors.Wrap(err, "failed to write")
 	}
 
 	machineLog := &mrl.MachineReadableLog{
@@ -37,13 +38,13 @@ func (opts *SectionOpt) Execute(args []string) error {
 	}
 
 	machineLogJSON, err := json.Marshal(machineLog)
-	if err != nil {
+	if err != nil { // !branch-not-tested
 		return err
 	}	
 
 	_, err = fmt.Fprintf(opts.Out, " MRL:%s\n", string(machineLogJSON))
-	if err != nil { // !branch-not-tested
-		return err
+	if err != nil {
+		return errors.Wrap(err, "failed to write")
 	}	
 
 	return nil
