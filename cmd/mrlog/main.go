@@ -49,6 +49,23 @@ func main() {
 	}
 
 	_, err = parser.AddCommand(
+		"section-end",
+		"log a section ending",
+		"log a section endging in MRL format",
+		&section.SectionOpt{
+			Section: section.Section{
+				Type: "end",
+			},
+			Out:   os.Stdout,
+			Clock: &mrlog.Clock{},
+		},
+	)
+	if err != nil {
+		fmt.Println("Could not add section command")
+		os.Exit(1)
+	}
+
+	_, err = parser.AddCommand(
 		"version",
 		"print version",
 		fmt.Sprintf("print %s version", mrlog.APP_NAME),

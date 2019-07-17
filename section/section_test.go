@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/cf-platform-eng/mrlog/section"
-	"github.com/cf-platform-eng/mrlog/section/sectionfakes"
 	"regexp"
 	"time"
+
+	"github.com/cf-platform-eng/mrlog/section"
+	"github.com/cf-platform-eng/mrlog/section/sectionfakes"
 
 	"github.com/cf-platform-eng/mrlog/clock/clockfakes"
 	. "github.com/onsi/ginkgo"
@@ -53,9 +54,9 @@ var _ = Describe("Section", func() {
 			machineReadableMatches := mrRE.FindSubmatch(output)
 
 			machineReadable := &struct {
-				Type    string    `json:"type"`
-				Name    string    `json:"name"`
-				Time    time.Time `json:"time"`
+				Type string    `json:"type"`
+				Name string    `json:"name"`
+				Time time.Time `json:"time"`
 			}{}
 
 			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
@@ -64,6 +65,39 @@ var _ = Describe("Section", func() {
 			Expect(machineReadable.Type).To(Equal("section-start"))
 			Expect(machineReadable.Name).To(Equal("install"))
 			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
+		})
+	})
+
+	Context("section end", func() {
+		BeforeEach(func() {
+			context.Result = 1
+			context.Type = "end"
+		})
+
+		It("logs the section end", func() {
+			Expect(context.Execute([]string{})).To(Succeed())
+			Expect(out).To(Say("section-end: result: 1"))
+
+			output := out.Contents()
+			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
+
+			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
+
+			machineReadableMatches := mrRE.FindSubmatch(output)
+
+			machineReadable := &struct {
+				Type   string    `json:"type"`
+				Result int       `json:"result"`
+				Time   time.Time `json:"time"`
+			}{}
+
+			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(machineReadable.Type).To(Equal("section-end"))
+			Expect(machineReadable.Result).To(Equal(1))
+			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
+
 		})
 	})
 
