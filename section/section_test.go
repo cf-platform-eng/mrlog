@@ -68,15 +68,42 @@ var _ = Describe("Section", func() {
 		})
 	})
 
+	Context("section without a name", func() {
+		BeforeEach(func() {
+			context.Name = ""
+			context.Type = "start"
+		})
+
+		It("return an error", func() {
+			err := context.Execute([]string{})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("missing section name"))
+		})
+	})
+
+	Context("invalid section type", func() {
+		BeforeEach(func() {
+			context.Name = "pete"
+			context.Type = "coding"
+		})
+
+		It("return an error", func() {
+			err := context.Execute([]string{})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("invalid section type argument"))
+		})
+	})
+
 	Context("section end", func() {
 		BeforeEach(func() {
 			context.Result = 1
 			context.Type = "end"
+			context.Name = "install"
 		})
 
 		It("logs the section end", func() {
 			Expect(context.Execute([]string{})).To(Succeed())
-			Expect(out).To(Say("section-end: result: 1"))
+			Expect(out).To(Say("section-end: 'install' result: 1"))
 
 			output := out.Contents()
 			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
@@ -87,6 +114,7 @@ var _ = Describe("Section", func() {
 
 			machineReadable := &struct {
 				Type   string    `json:"type"`
+				Name   string    `json:"name"`
 				Result int       `json:"result"`
 				Time   time.Time `json:"time"`
 			}{}
@@ -95,6 +123,7 @@ var _ = Describe("Section", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(machineReadable.Type).To(Equal("section-end"))
+			Expect(machineReadable.Name).To(Equal("install"))
 			Expect(machineReadable.Result).To(Equal(1))
 			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
 

@@ -23,10 +23,25 @@ type SectionOpt struct {
 	Clock clock.Clock
 }
 
-func (opts *SectionOpt) startSection() error {
-	humanReadable := fmt.Sprintf("section-%s: '%s'",
-		opts.Type,
-		opts.Name)
+func (opts *SectionOpt) Execute(args []string) error {
+	var humanReadable string
+	if opts.Type == "start" {
+		humanReadable = fmt.Sprintf("section-%s: '%s'",
+			opts.Type,
+			opts.Name)
+
+	} else if opts.Type == "end" {
+		humanReadable = fmt.Sprintf("section-%s: '%s' result: %d",
+			opts.Type,
+			opts.Name,
+			opts.Result)
+	} else {
+		return errors.New("invalid section type argument")
+	}
+
+	if opts.Name == "" {
+		return errors.New("missing section name")
+	}
 
 	_, err := fmt.Fprint(opts.Out, humanReadable)
 	if err != nil {
@@ -34,35 +49,7 @@ func (opts *SectionOpt) startSection() error {
 	}
 
 	machineLog := &mrl.MachineReadableLog{
-		Type: fmt.Sprintf("section-%s", opts.Type),
-		Name: opts.Name,
-		Time: opts.Clock.Now(),
-	}
-
-	machineLogJSON, err := json.Marshal(machineLog)
-	if err != nil { // !branch-not-tested
-		return err
-	}
-
-	_, err = fmt.Fprintf(opts.Out, " MRL:%s\n", string(machineLogJSON))
-	if err != nil {
-		return errors.Wrap(err, "failed to write")
-	}
-
-	return nil
-}
-
-func (opts *SectionOpt) endSection() error {
-	humanReadable := fmt.Sprintf("section-%s: result: %d",
-		opts.Type,
-		opts.Result)
-
-	_, err := fmt.Fprint(opts.Out, humanReadable)
-	if err != nil {
-		return errors.Wrap(err, "failed to write")
-	}
-
-	machineLog := &mrl.MachineReadableLog{
+		Name:   opts.Name,
 		Type:   fmt.Sprintf("section-%s", opts.Type),
 		Result: opts.Result,
 		Time:   opts.Clock.Now(),
@@ -79,14 +66,5 @@ func (opts *SectionOpt) endSection() error {
 	}
 
 	return nil
-}
 
-func (opts *SectionOpt) Execute(args []string) error {
-	if opts.Type == "start" {
-		return opts.startSection()
-	} else if opts.Type == "end" {
-		return opts.endSection()
-	}
-
-	return fmt.Errorf("invalid section argument")
 }

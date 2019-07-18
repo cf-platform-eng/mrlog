@@ -67,6 +67,8 @@ var _ = Describe("log section boundaries", func() {
 			logCommand := exec.Command(
 				mrlogPath,
 				"section-end",
+				"--name",
+				"test-section",
 				"--result",
 				"1",
 			)
@@ -107,7 +109,7 @@ var _ = Describe("log section boundaries", func() {
 
 		define.Then(`^the result is a machine and human readable section end line$`, func() {
 			Eventually(commandSession.Out).Should(
-				Say("section-end: result: 1"))
+				Say("section-end: 'test-section' result: 1"))
 
 			contents := commandSession.Out.Contents()
 
@@ -118,6 +120,7 @@ var _ = Describe("log section boundaries", func() {
 
 			machineReadable := &struct {
 				Type   string `json:"type"`
+				Name   string `json:"name"`
 				Result int    `json:"result"`
 				Time   time.Time
 			}{}
@@ -126,6 +129,7 @@ var _ = Describe("log section boundaries", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(machineReadable.Type).To(Equal("section-end"))
+			Expect(machineReadable.Name).To(Equal("test-section"))
 			Expect(machineReadable.Result).To(Equal(1))
 			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
 		})
