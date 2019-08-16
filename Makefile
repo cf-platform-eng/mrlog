@@ -58,6 +58,8 @@ build-darwin: deps build/mrlog-darwin
 
 build-all: build-linux build-darwin
 
+build-image: build/mrlog-linux
+	docker build --tag cfplatformeng/mrlog:${VERSION} --file Dockerfile .
 
 # #### TESTS ####
 
