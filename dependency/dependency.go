@@ -10,8 +10,9 @@ import (
 )
 
 type Identities struct {
-	Name    string `long:"name" description:"name of the dependency, if it has one" required:"true"`
-	Version string `long:"version" description:"version string for the dependency, if it has one" required:"true"`
+	Name     string `long:"name" description:"name of the dependency, if it has one" required:"true"`
+	Version  string `long:"version" description:"version string for the dependency, if it has one" required:"true"`
+	Metadata string `long:"metadata" description:"optionally provide metadata for this dependency"`
 }
 
 type DependencyOpt struct {
@@ -21,7 +22,6 @@ type DependencyOpt struct {
 }
 
 func (opts *DependencyOpt) Execute(args []string) error {
-
 	humanReadable := fmt.Sprintf("dependency: "+
 		"'%s' version '%s'",
 		opts.Name,
@@ -33,10 +33,11 @@ func (opts *DependencyOpt) Execute(args []string) error {
 	}
 
 	machineLog := &mrl.MachineReadableLog{
-		Type:    "dependency",
-		Version: opts.Version,
-		Name:    opts.Name,
-		Time:    opts.Clock.Now(),
+		Type:     "dependency",
+		Version:  opts.Version,
+		Name:     opts.Name,
+		Metadata: opts.Metadata,
+		Time:     opts.Clock.Now(),
 	}
 
 	machineLogJSON, err := json.Marshal(machineLog)
