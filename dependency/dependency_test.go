@@ -31,10 +31,25 @@ var _ = Describe("Dependency", func() {
 		}
 	})
 
+	Context("dependency with invalid metadata", func() {
+		BeforeEach(func() {
+			context.Version = "1.2.3"
+			context.Name = "some-file.tgz"
+			context.Metadata = "I AM NOT JSON"
+		})
+
+		It("logs the dependency", func() {
+			err := context.Execute([]string{})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid metadata"))
+		})
+	})
+
 	Context("dependency with every flag", func() {
 		BeforeEach(func() {
 			context.Version = "1.2.3"
 			context.Name = "some-file.tgz"
+			context.Metadata = "{\"some-key\":\"some-value\"}"
 		})
 
 		It("logs the dependency", func() {
@@ -49,10 +64,11 @@ var _ = Describe("Dependency", func() {
 			machineReadableMatches := mrRE.FindSubmatch(output)
 
 			machineReadable := &struct {
-				Type    string    `json:"type"`
-				Name    string    `json:"name"`
-				Version string    `json:"version"`
-				Time    time.Time `json:"time"`
+				Type     string      `json:"type"`
+				Name     string      `json:"name"`
+				Version  string      `json:"version"`
+				Metadata interface{} `json:"metadata"`
+				Time     time.Time   `json:"time"`
 			}{}
 
 			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
@@ -62,7 +78,7 @@ var _ = Describe("Dependency", func() {
 			Expect(machineReadable.Version).To(Equal("1.2.3"))
 			Expect(machineReadable.Name).To(Equal("some-file.tgz"))
 			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
-
+			Expect(machineReadable.Metadata).To(HaveKeyWithValue("some-key", "some-value"))
 		})
 	})
 })

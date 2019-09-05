@@ -149,10 +149,10 @@ var _ = Describe("log a dependency", func() {
 			machineReadableMatches := mrRE.FindSubmatch(contents)
 
 			machineReadable := &struct {
-				Type     string `json:"type"`
-				Name     string `json:"name"`
-				Version  string `json:"version"`
-				Metadata string `json:"metadata"`
+				Type     string      `json:"type"`
+				Name     string      `json:"name"`
+				Version  string      `json:"version"`
+				Metadata interface{} `json:"metadata"`
 				Time     time.Time
 			}{}
 
@@ -174,17 +174,17 @@ var _ = Describe("log a dependency", func() {
 			machineReadableMatches := mrRE.FindSubmatch(contents)
 
 			machineReadable := &struct {
-				Type     string `json:"type"`
-				Name     string `json:"name"`
-				Version  string `json:"version"`
-				Metadata string `json:"metadata"`
+				Type     string      `json:"type"`
+				Name     string      `json:"name"`
+				Version  string      `json:"version"`
+				Metadata interface{} `json:"metadata"`
 				Time     time.Time
 			}{}
 
 			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(machineReadable.Metadata).To(Equal("{\"some-key\":\"some-value\"}"))
+			Expect(machineReadable.Metadata).To(HaveKeyWithValue("some-key", "some-value"))
 		})
 
 		define.Then(`^the error telling me to provide a name$`, func() {

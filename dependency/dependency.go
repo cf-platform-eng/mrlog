@@ -7,6 +7,7 @@ import (
 
 	"github.com/cf-platform-eng/mrlog/clock"
 	"github.com/cf-platform-eng/mrlog/mrl"
+	"github.com/pkg/errors"
 )
 
 type Identities struct {
@@ -38,6 +39,13 @@ func (opts *DependencyOpt) Execute(args []string) error {
 		Name:     opts.Name,
 		Metadata: opts.Metadata,
 		Time:     opts.Clock.Now(),
+	}
+
+	if opts.Metadata != "" {
+		err = json.Unmarshal([]byte(opts.Metadata), &machineLog.Metadata)
+		if err != nil {
+			return errors.Wrap(err, "invalid metadata")
+		}
 	}
 
 	machineLogJSON, err := json.Marshal(machineLog)
