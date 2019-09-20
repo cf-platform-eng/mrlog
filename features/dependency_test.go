@@ -55,6 +55,14 @@ var _ = Describe("log a dependency", func() {
 		steps.Then("the command exits with an error")
 	})
 
+	Scenario("logging a dependency without a type", func() {
+		steps.Given("I have the mrlog binary")
+
+		steps.When("I log a dependency without a type")
+
+		steps.Then("the command exits with an error")
+	})
+
 	steps.Define(func(define Definitions) {
 		var (
 			commandSession *gexec.Session
@@ -77,6 +85,8 @@ var _ = Describe("log a dependency", func() {
 				"marman",
 				"--version",
 				"1.2.3",
+				"--type",
+				"binary",
 			)
 
 			var err error
@@ -90,6 +100,21 @@ var _ = Describe("log a dependency", func() {
 				"dependency",
 				"--version",
 				"1.2.3",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a dependency without a type$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"dependency",
+				"--version",
+				"1.2.3",
+				"--name",
+				"dep",
 			)
 
 			var err error
@@ -120,6 +145,8 @@ var _ = Describe("log a dependency", func() {
 				"1.2.3",
 				"--metadata",
 				"{\"some-key\":\"some-value\"}",
+				"--type",
+				"binary",
 			)
 
 			var err error
@@ -137,7 +164,7 @@ var _ = Describe("log a dependency", func() {
 
 		define.Then(`^the result contains a human readable log$`, func() {
 			Eventually(commandSession.Out).Should(
-				Say("dependency: 'marman' version '1.2.3'"))
+				Say("binary dependency: 'marman' version '1.2.3'"))
 		})
 
 		define.Then(`^the result contains a machine readable log$`, func() {
@@ -159,7 +186,7 @@ var _ = Describe("log a dependency", func() {
 			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(machineReadable.Type).To(Equal("dependency"))
+			Expect(machineReadable.Type).To(Equal("binary dependency"))
 			Expect(machineReadable.Name).To(Equal("marman"))
 			Expect(machineReadable.Version).To(Equal("1.2.3"))
 			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))

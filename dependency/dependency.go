@@ -11,9 +11,10 @@ import (
 )
 
 type Identities struct {
-	Name     string `long:"name" description:"name of the dependency, if it has one" required:"true"`
-	Version  string `long:"version" description:"version string for the dependency, if it has one" required:"true"`
-	Metadata string `long:"metadata" description:"optionally provide metadata for this dependency"`
+	Name           string `long:"name" description:"name of the dependency, if it has one" required:"true"`
+	Version        string `long:"version" description:"version string for the dependency, if it has one" required:"true"`
+	Metadata       string `long:"metadata" description:"optionally provide metadata for this dependency"`
+	DependencyType string `long:"type" description:"type of dependency" required:"true"`
 }
 
 type DependencyOpt struct {
@@ -23,8 +24,9 @@ type DependencyOpt struct {
 }
 
 func (opts *DependencyOpt) Execute(args []string) error {
-	humanReadable := fmt.Sprintf("dependency: "+
+	humanReadable := fmt.Sprintf("%s dependency: "+
 		"'%s' version '%s'",
+		opts.DependencyType,
 		opts.Name,
 		opts.Version)
 
@@ -34,7 +36,7 @@ func (opts *DependencyOpt) Execute(args []string) error {
 	}
 
 	machineLog := &mrl.MachineReadableLog{
-		Type:     "dependency",
+		Type:     opts.DependencyType + " dependency",
 		Version:  opts.Version,
 		Name:     opts.Name,
 		Metadata: opts.Metadata,

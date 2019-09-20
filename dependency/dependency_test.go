@@ -50,11 +50,12 @@ var _ = Describe("Dependency", func() {
 			context.Version = "1.2.3"
 			context.Name = "some-file.tgz"
 			context.Metadata = "{\"some-key\":\"some-value\"}"
+			context.DependencyType = "binary"
 		})
 
 		It("logs the dependency", func() {
 			Expect(context.Execute([]string{})).To(Succeed())
-			Expect(out).To(Say("dependency: 'some-file.tgz' version '1.2.3'"))
+			Expect(out).To(Say("binary dependency: 'some-file.tgz' version '1.2.3'"))
 
 			output := out.Contents()
 			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
@@ -74,7 +75,7 @@ var _ = Describe("Dependency", func() {
 			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(machineReadable.Type).To(Equal("dependency"))
+			Expect(machineReadable.Type).To(Equal("binary dependency"))
 			Expect(machineReadable.Version).To(Equal("1.2.3"))
 			Expect(machineReadable.Name).To(Equal("some-file.tgz"))
 			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
