@@ -60,7 +60,9 @@ var _ = Describe("log a dependency", func() {
 
 		steps.When("I log a dependency without a type")
 
-		steps.Then("the command exits with an error")
+		steps.Then("the command exits without error")
+		steps.And("the result contains a typeless human readable log")
+		steps.And("the result contains a typeless machine readable log")
 	})
 
 	steps.Define(func(define Definitions) {
@@ -167,6 +169,11 @@ var _ = Describe("log a dependency", func() {
 				Say("binary dependency: 'marman' version '1.2.3'"))
 		})
 
+		define.Then(`^the result contains a typeless human readable log$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("dependency: 'dep' version '1.2.3'"))
+		})
+
 		define.Then(`^the result contains a machine readable log$`, func() {
 			contents := commandSession.Out.Contents()
 
@@ -188,6 +195,31 @@ var _ = Describe("log a dependency", func() {
 
 			Expect(machineReadable.Type).To(Equal("binary dependency"))
 			Expect(machineReadable.Name).To(Equal("marman"))
+			Expect(machineReadable.Version).To(Equal("1.2.3"))
+			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
+		})
+
+		define.Then(`^the result contains a typeless machine readable log$`, func() {
+			contents := commandSession.Out.Contents()
+
+			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
+			Expect(mrRE.Match(contents)).To(BeTrue())
+
+			machineReadableMatches := mrRE.FindSubmatch(contents)
+
+			machineReadable := &struct {
+				Type     string      `json:"type"`
+				Name     string      `json:"name"`
+				Version  string      `json:"version"`
+				Metadata interface{} `json:"metadata"`
+				Time     time.Time
+			}{}
+
+			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(machineReadable.Type).To(Equal("dependency"))
+			Expect(machineReadable.Name).To(Equal("dep"))
 			Expect(machineReadable.Version).To(Equal("1.2.3"))
 			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
 		})
