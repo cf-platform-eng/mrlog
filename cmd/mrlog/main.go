@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -66,6 +67,23 @@ func main() {
 	}
 
 	_, err = parser.AddCommand(
+		"section",
+		"log command output within a section",
+		"execute command between section begin and section end",
+		&section.SectionOpt{
+			Section: section.Section{
+				Type: "section",
+			},
+			Out:   os.Stdout,
+			Clock: &mrlog.Clock{},
+		},
+	)
+	if err != nil {
+		fmt.Println("Could not add section command")
+		os.Exit(1)
+	}
+
+	_, err = parser.AddCommand(
 		"version",
 		"print version",
 		fmt.Sprintf("print %s version", mrlog.APP_NAME),
@@ -79,6 +97,10 @@ func main() {
 
 	_, err = parser.Parse()
 	if err != nil {
+		var e *section.SectionError
+		if errors.As(err, &e) {
+			os.Exit(e.Retval)
+		}
 		os.Exit(1)
 	}
 }

@@ -36,6 +36,47 @@ var _ = Describe("log section boundaries", func() {
 		steps.And("the result is a machine and human readable section end line")
 	})
 
+	Describe("subshell sections", func() {
+		Scenario("gracefully handles missing command", func() {
+			steps.Given("I have the mrlog binary")
+
+			steps.When("I log a section without a command")
+
+			steps.Then("the command exits with 1")
+			steps.And("tells me a command is required")
+
+		})
+		Scenario("reports failure to execute subcommand", func() {
+			steps.Given("I have the mrlog binary")
+
+			steps.When("I log a section with a missing subcommand")
+
+			steps.Then("the command exits with -1")
+			steps.And("the result contains human readable section begin line")
+			steps.And("the result contains human readable result -1 section end line")
+		})
+		Scenario("logging a successful sub command", func() {
+			steps.Given("I have the mrlog binary")
+
+			steps.When("I log a section with a successful subcommand")
+
+			steps.Then("the command exits without error")
+			steps.And("the result contains human readable section begin line")
+			steps.And("the result contains output from the successful command")
+			steps.And("the result contains human readable successful section end line")
+		})
+		Scenario("logging a failed sub command", func() {
+			steps.Given("I have the mrlog binary")
+
+			steps.When("I log a section with a failed subcommand")
+
+			steps.Then("the command exits with 2")
+			steps.And("the result contains human readable section begin line")
+			steps.And("the result contains output from the failed command")
+			steps.And("the result contains human readable result 2 section end line")
+		})
+	})
+
 	steps.Define(func(define Definitions) {
 		var (
 			commandSession *gexec.Session
@@ -76,6 +117,76 @@ var _ = Describe("log section boundaries", func() {
 			var err error
 			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a section with a successful subcommand$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"section",
+				"--name",
+				"test-section",
+				"--",
+				"fixtures/successful-subcommand.sh",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a section with a failed subcommand$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"section",
+				"--name",
+				"test-section",
+				"--",
+				"fixtures/failed-subcommand.sh",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a section without a command$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"section",
+				"--name",
+				"test-section",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a section with a missing subcommand$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"section",
+				"--name",
+				"test-section",
+				"--",
+				"fixtures/missing-subcommand.sh",	// this file does not exist, keep it that way!
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.Then(`^the command exits with 1$`, func() {
+			Eventually(commandSession).Should(gexec.Exit(1))
+		})
+
+		define.Then(`^the command exits with 2$`, func() {
+			Eventually(commandSession).Should(gexec.Exit(2))
+		})
+
+		define.Then(`^the command exits with -1$`, func() {
+			Eventually(commandSession).Should(gexec.Exit(-1))
 		})
 
 		define.Then(`^the command exits without error$`, func() {
@@ -134,10 +245,48 @@ var _ = Describe("log section boundaries", func() {
 			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
 		})
 
-		define.Then(`^the error telling me to provide a name$`, func() {
-			Eventually(commandSession.Err).Should(
-				Say("the required flag `--name' was not specified"))
+		define.Then(`^the result contains human readable section begin line$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-start: 'test-section'"))
 		})
 
+		define.Then(`^the result contains human readable successful section end line$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-end: 'test-section' result: 0 "))
+		})
+
+		define.Then(`^the result contains human readable result 1 section end line$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-end: 'test-section' result: 1 "))
+		})
+
+		define.Then(`^the result contains human readable result -1 section end line$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-end: 'test-section' result: -1 "))
+		})
+
+		define.Then(`^the result contains human readable result 2 section end line$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-end: 'test-section' result: 2 "))
+		})
+
+		define.Then(`^the result contains output from the successful command$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("This is a successful command"))
+		})
+
+		define.Then(`^the result contains output from the failed command$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("This is a failed command"))
+		})
+
+		define.Then(`^the error telling me to provide a name$`, func() {
+			Eventually(commandSession.Err).Should(
+				Say("the required flag '--name' was not specified"))
+		})
+		define.Then(`tells me a command is required$`, func() {
+			Eventually(commandSession.Err).Should(
+				Say("the section subcommand requires a command parameter '-- <command> ...'"))
+		})
 	})
 })
