@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"time"
 
+	os_exec "os/exec"
+
 	"github.com/cf-platform-eng/mrlog/section"
 	"github.com/cf-platform-eng/mrlog/section/sectionfakes"
-
+	"github.com/cf-platform-eng/mrlog/exec/execfakes"
 	"github.com/cf-platform-eng/mrlog/clock/clockfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,6 +25,7 @@ var _ = Describe("Section", func() {
 	var (
 		out     *Buffer
 		context *section.SectionOpt
+		cmd *execfakes.FakeCmd
 	)
 
 	BeforeEach(func() {
@@ -29,10 +33,14 @@ var _ = Describe("Section", func() {
 
 		clock := &clockfakes.FakeClock{}
 		clock.NowReturns(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC))
+		exec := &execfakes.FakeExec{}
+		cmd = &execfakes.FakeCmd{}
+		exec.CommandReturns(cmd)
 
 		context = &section.SectionOpt{
 			Out:   out,
 			Clock: clock,
+			Exec: exec,
 		}
 	})
 
@@ -146,6 +154,36 @@ var _ = Describe("Section", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("write-error"))
 			Expect(err.Error()).To(ContainSubstring("failed to write"))
+		})
+	})
+
+	Context("section subcommand", func() {
+		BeforeEach(func() {
+			context.Type = "section"
+			context.Name = "install"
+		})
+
+		It("fails given no command", func() {
+			err := context.Execute([]string{})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("the section subcommand requires a command parameter '-- <command> ...'"))
+		})
+
+		It("succeeds given command", func() {
+			err := context.Execute([]string{"command"})
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		Context("reports failure to execute subcommand", func() {
+			BeforeEach(func() {
+				cmd.RunReturns(fmt.Errorf("command failed"))
+			})
+
+			It("fails when command run fails", func() {
+				err := context.Execute([]string{"command"})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("command failed"))
+			})
 		})
 	})
 })

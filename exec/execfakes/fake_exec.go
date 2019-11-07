@@ -2,30 +2,29 @@
 package execfakes
 
 import (
-	execa "os/exec"
 	"sync"
 
 	"github.com/cf-platform-eng/mrlog/exec"
 )
 
 type FakeExec struct {
-	CommandStub        func(string, ...string) *execa.Cmd
+	CommandStub        func(string, ...string) exec.Cmd
 	commandMutex       sync.RWMutex
 	commandArgsForCall []struct {
 		arg1 string
 		arg2 []string
 	}
 	commandReturns struct {
-		result1 *execa.Cmd
+		result1 exec.Cmd
 	}
 	commandReturnsOnCall map[int]struct {
-		result1 *execa.Cmd
+		result1 exec.Cmd
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeExec) Command(arg1 string, arg2 ...string) *execa.Cmd {
+func (fake *FakeExec) Command(arg1 string, arg2 ...string) exec.Cmd {
 	fake.commandMutex.Lock()
 	ret, specificReturn := fake.commandReturnsOnCall[len(fake.commandArgsForCall)]
 	fake.commandArgsForCall = append(fake.commandArgsForCall, struct {
@@ -50,7 +49,7 @@ func (fake *FakeExec) CommandCallCount() int {
 	return len(fake.commandArgsForCall)
 }
 
-func (fake *FakeExec) CommandCalls(stub func(string, ...string) *execa.Cmd) {
+func (fake *FakeExec) CommandCalls(stub func(string, ...string) exec.Cmd) {
 	fake.commandMutex.Lock()
 	defer fake.commandMutex.Unlock()
 	fake.CommandStub = stub
@@ -63,26 +62,26 @@ func (fake *FakeExec) CommandArgsForCall(i int) (string, []string) {
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeExec) CommandReturns(result1 *execa.Cmd) {
+func (fake *FakeExec) CommandReturns(result1 exec.Cmd) {
 	fake.commandMutex.Lock()
 	defer fake.commandMutex.Unlock()
 	fake.CommandStub = nil
 	fake.commandReturns = struct {
-		result1 *execa.Cmd
+		result1 exec.Cmd
 	}{result1}
 }
 
-func (fake *FakeExec) CommandReturnsOnCall(i int, result1 *execa.Cmd) {
+func (fake *FakeExec) CommandReturnsOnCall(i int, result1 exec.Cmd) {
 	fake.commandMutex.Lock()
 	defer fake.commandMutex.Unlock()
 	fake.CommandStub = nil
 	if fake.commandReturnsOnCall == nil {
 		fake.commandReturnsOnCall = make(map[int]struct {
-			result1 *execa.Cmd
+			result1 exec.Cmd
 		})
 	}
 	fake.commandReturnsOnCall[i] = struct {
-		result1 *execa.Cmd
+		result1 exec.Cmd
 	}{result1}
 }
 
