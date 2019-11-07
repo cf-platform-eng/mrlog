@@ -1,8 +1,9 @@
 package mrlog
 
 import (
-	os_exec "os/exec"
 	"io"
+	os_exec "os/exec"
+
 	"github.com/cf-platform-eng/mrlog/exec"
 )
 
