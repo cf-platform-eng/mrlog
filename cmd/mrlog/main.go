@@ -76,6 +76,7 @@ func main() {
 			},
 			Out:   os.Stdout,
 			Clock: &mrlog.Clock{},
+			Exec:  &mrlog.Exec{},
 		},
 	)
 	if err != nil {

@@ -169,7 +169,7 @@ var _ = Describe("log section boundaries", func() {
 				"--name",
 				"test-section",
 				"--",
-				"fixtures/missing-subcommand.sh",	// this file does not exist, keep it that way!
+				"fixtures/missing-subcommand.sh", // this file does not exist, keep it that way!
 			)
 
 			var err error

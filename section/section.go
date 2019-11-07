@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os/exec"
+	os_exec "os/exec"
 	"time"
 
 	"github.com/cf-platform-eng/mrlog/clock"
+	"github.com/cf-platform-eng/mrlog/exec"
 	"github.com/cf-platform-eng/mrlog/mrl"
 )
 
@@ -22,11 +23,12 @@ type SectionOpt struct {
 	Section
 	Out   io.Writer
 	Clock clock.Clock
+	Exec  exec.Exec
 }
 
 type SectionError struct {
 	Retval int
-	Err error
+	Err    error
 }
 
 func writeSection(sectionType, sectionName string, exitCode int, time time.Time, out io.Writer) error {
@@ -70,7 +72,9 @@ func writeSection(sectionType, sectionName string, exitCode int, time time.Time,
 }
 
 func (e *SectionError) Unwrap() error { return e.Err }
-func (e *SectionError) Error() string { return fmt.Sprintf("Section subcommand failed with %d: %s", e.Retval, e.Err)}
+func (e *SectionError) Error() string {
+	return fmt.Sprintf("Section subcommand failed with %d: %s", e.Retval, e.Err)
+}
 
 func (opts *SectionOpt) Execute(args []string) error {
 	if opts.Name == "" {
@@ -86,9 +90,8 @@ func (opts *SectionOpt) Execute(args []string) error {
 			return err
 		}
 
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Stdout = opts.Out
-		cmd.Stderr = opts.Out
+		cmd := opts.Exec.Command(args[0], args[1:]...)
+		cmd.SetOutput(opts.Out)
 		err := cmd.Run()
 
 		exitCode := 0
@@ -96,7 +99,7 @@ func (opts *SectionOpt) Execute(args []string) error {
 		var sectionError *SectionError
 
 		if err != nil {
-			var e *exec.ExitError
+			var e *os_exec.ExitError
 			if errors.As(err, &e) {
 				exitCode = e.ExitCode()
 			} else {
@@ -104,7 +107,7 @@ func (opts *SectionOpt) Execute(args []string) error {
 			}
 			sectionError = &SectionError{exitCode, err}
 		}
-		
+
 		err = writeSection("end", opts.Name, exitCode, opts.Clock.Now(), opts.Out)
 
 		if sectionError != nil {

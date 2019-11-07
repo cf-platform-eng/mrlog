@@ -2,8 +2,8 @@
 package sectionfakes
 
 import (
-	io "io"
-	sync "sync"
+	"io"
+	"sync"
 )
 
 type FakeWriter struct {
