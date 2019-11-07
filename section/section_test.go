@@ -8,12 +8,10 @@ import (
 	"regexp"
 	"time"
 
-	os_exec "os/exec"
-
+	"github.com/cf-platform-eng/mrlog/clock/clockfakes"
+	"github.com/cf-platform-eng/mrlog/exec/execfakes"
 	"github.com/cf-platform-eng/mrlog/section"
 	"github.com/cf-platform-eng/mrlog/section/sectionfakes"
-	"github.com/cf-platform-eng/mrlog/exec/execfakes"
-	"github.com/cf-platform-eng/mrlog/clock/clockfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -25,7 +23,7 @@ var _ = Describe("Section", func() {
 	var (
 		out     *Buffer
 		context *section.SectionOpt
-		cmd *execfakes.FakeCmd
+		cmd     *execfakes.FakeCmd
 	)
 
 	BeforeEach(func() {
@@ -40,7 +38,7 @@ var _ = Describe("Section", func() {
 		context = &section.SectionOpt{
 			Out:   out,
 			Clock: clock,
-			Exec: exec,
+			Exec:  exec,
 		}
 	})
 
