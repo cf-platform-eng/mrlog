@@ -13,9 +13,9 @@ import (
 )
 
 type Section struct {
-	Type   string
-	Name   string `long:"name" description:"name of the section"`
-	Result int    `long:"result" description:"exitCode code for section"`
+	Type      string
+	Name      string `long:"name" description:"name of the section"`
+	Result    int    `long:"result" description:"exitCode code for section"`
 	OnSuccess string `long:"on-success" description:"optional message for successful subcommand"`
 	OnFailure string `long:"on-failure" description:"optional message for failed subcommand"`
 }
@@ -33,6 +33,13 @@ type SectionError struct {
 }
 
 func writeSection(opts SectionOpt) error {
+	machineLog := &mrl.MachineReadableLog{
+		Name:   opts.Name,
+		Type:   fmt.Sprintf("section-%s", opts.Type),
+		Result: opts.Result,
+		Time:   opts.Clock.Now(),
+	}
+
 	var humanReadable string
 	if opts.Type == "start" {
 		humanReadable = fmt.Sprintf("section-%s: '%s'",
@@ -45,12 +52,14 @@ func writeSection(opts SectionOpt) error {
 				opts.Name,
 				opts.Result,
 				opts.OnSuccess)
+			machineLog.Message = opts.OnSuccess
 		} else if opts.Result != 0 && opts.OnFailure != "" {
 			humanReadable = fmt.Sprintf("section-%s: '%s' result: %d message: '%s'",
 				opts.Type,
 				opts.Name,
 				opts.Result,
 				opts.OnFailure)
+			machineLog.Message = opts.OnFailure
 		} else {
 			humanReadable = fmt.Sprintf("section-%s: '%s' result: %d",
 				opts.Type,
@@ -64,13 +73,6 @@ func writeSection(opts SectionOpt) error {
 	_, err := fmt.Fprint(opts.Out, humanReadable)
 	if err != nil {
 		return fmt.Errorf("failed to write: %w", err)
-	}
-
-	machineLog := &mrl.MachineReadableLog{
-		Name:   opts.Name,
-		Type:   fmt.Sprintf("section-%s", opts.Type),
-		Result: opts.Result,
-		Time:   opts.Clock.Now(),
 	}
 
 	machineLogJSON, err := json.Marshal(machineLog)

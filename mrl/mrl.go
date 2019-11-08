@@ -12,4 +12,5 @@ type MachineReadableLog struct {
 	Metadata interface{} `json:"metadata,omitempty"`
 	Result   int         `json:"result,omitempty"`
 	Time     time.Time   `json:"time"`
+	Message  string      `json:"message,omitempty"`
 }
