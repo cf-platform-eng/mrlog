@@ -98,9 +98,9 @@ var _ = Describe("Section", func() {
 			Expect(out).To(Say("section-end: 'install' result: 1"))
 
 			expectedMRL := mrl{
-				Type: "section-end",
-				Name: "install",
-				Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+				Type:   "section-end",
+				Name:   "install",
+				Time:   time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 				Result: 1,
 			}
 
@@ -150,10 +150,10 @@ var _ = Describe("Section", func() {
 				Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 			}
 			matchMRL(&startMRL, `section-start:.*MRL:(.*)`, out.Contents())
-			endMRL := mrl {
-				Type: "section-end",
-				Name: "install",
-				Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+			endMRL := mrl{
+				Type:   "section-end",
+				Name:   "install",
+				Time:   time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 				Result: 0,
 			}
 			matchMRL(&endMRL, `section-end:.*MRL:(.*)`, out.Contents())
@@ -177,10 +177,10 @@ var _ = Describe("Section", func() {
 					Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 				}
 				matchMRL(&startMRL, `section-start:.*MRL:(.*)`, out.Contents())
-				endMRL := mrl {
-					Type: "section-end",
-					Name: "install",
-					Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+				endMRL := mrl{
+					Type:   "section-end",
+					Name:   "install",
+					Time:   time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 					Result: -1,
 				}
 				matchMRL(&endMRL, `section-end:.*MRL:(.*)`, out.Contents())
@@ -200,10 +200,10 @@ var _ = Describe("Section", func() {
 					Expect(out).To(Say("section-end: 'messages' result: 0 message: 'successful'"))
 
 					expectedMRL := mrl{
-						Type: "section-end",
-						Name: "messages",
-						Result: 0,
-						Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+						Type:    "section-end",
+						Name:    "messages",
+						Result:  0,
+						Time:    time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 						Message: "successful",
 					}
 					matchMRL(&expectedMRL, `section-end:.*MRL:(.*)`, out.Contents())
@@ -218,10 +218,10 @@ var _ = Describe("Section", func() {
 					Expect(out).To(Say("section-end: 'messages' result: -1 message: 'failure'"))
 
 					expectedMRL := mrl{
-						Type: "section-end",
-						Name: "messages",
-						Result: -1,
-						Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+						Type:    "section-end",
+						Name:    "messages",
+						Result:  -1,
+						Time:    time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 						Message: "failure",
 					}
 					matchMRL(&expectedMRL, `section-end:.*MRL:(.*)`, out.Contents())
