@@ -1,7 +1,6 @@
 package section_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -52,25 +51,12 @@ var _ = Describe("Section", func() {
 			Expect(context.Execute([]string{})).To(Succeed())
 			Expect(out).To(Say("section-start: 'install'"))
 
-			output := out.Contents()
-			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
-
-			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
-
-			machineReadableMatches := mrRE.FindSubmatch(output)
-
-			machineReadable := &struct {
-				Type string    `json:"type"`
-				Name string    `json:"name"`
-				Time time.Time `json:"time"`
-			}{}
-
-			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(machineReadable.Type).To(Equal("section-start"))
-			Expect(machineReadable.Name).To(Equal("install"))
-			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
+			expectedMRL := mrl{
+				Type: "section-start",
+				Name: "install",
+				Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+			}
+			matchMRL(&expectedMRL, `\s(?m)MRL:(.*)\n`, out.Contents())
 		})
 	})
 
@@ -111,28 +97,14 @@ var _ = Describe("Section", func() {
 			Expect(context.Execute([]string{})).To(Succeed())
 			Expect(out).To(Say("section-end: 'install' result: 1"))
 
-			output := out.Contents()
-			Expect(bytes.Count(output, []byte("\n"))).To(Equal(1))
+			expectedMRL := mrl{
+				Type:   "section-end",
+				Name:   "install",
+				Time:   time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+				Result: 1,
+			}
 
-			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
-
-			machineReadableMatches := mrRE.FindSubmatch(output)
-
-			machineReadable := &struct {
-				Type   string    `json:"type"`
-				Name   string    `json:"name"`
-				Result int       `json:"result"`
-				Time   time.Time `json:"time"`
-			}{}
-
-			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(machineReadable.Type).To(Equal("section-end"))
-			Expect(machineReadable.Name).To(Equal("install"))
-			Expect(machineReadable.Result).To(Equal(1))
-			Expect(machineReadable.Time).To(Equal(time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC)))
-
+			matchMRL(&expectedMRL, `\s(?m)MRL:(.*)\n`, out.Contents())
 		})
 	})
 
@@ -168,8 +140,23 @@ var _ = Describe("Section", func() {
 		})
 
 		It("succeeds given command", func() {
-			err := context.Execute([]string{"command"})
-			Expect(err).ToNot(HaveOccurred())
+			Expect(context.Execute([]string{"command"})).To(Succeed())
+			Expect(out).To(Say("section-start: 'install'"))
+			Expect(out).To(Say("section-end: 'install' result: 0"))
+
+			startMRL := mrl{
+				Type: "section-start",
+				Name: "install",
+				Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+			}
+			matchMRL(&startMRL, `section-start:.*MRL:(.*)`, out.Contents())
+			endMRL := mrl{
+				Type:   "section-end",
+				Name:   "install",
+				Time:   time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+				Result: 0,
+			}
+			matchMRL(&endMRL, `section-end:.*MRL:(.*)`, out.Contents())
 		})
 
 		Context("reports failure to execute subcommand", func() {
@@ -181,7 +168,91 @@ var _ = Describe("Section", func() {
 				err := context.Execute([]string{"command"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("command failed"))
+				Expect(out).To(Say("section-start: 'install'"))
+				Expect(out).To(Say("section-end: 'install' result: -1"))
+
+				startMRL := mrl{
+					Type: "section-start",
+					Name: "install",
+					Time: time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+				}
+				matchMRL(&startMRL, `section-start:.*MRL:(.*)`, out.Contents())
+				endMRL := mrl{
+					Type:   "section-end",
+					Name:   "install",
+					Time:   time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+					Result: -1,
+				}
+				matchMRL(&endMRL, `section-end:.*MRL:(.*)`, out.Contents())
+			})
+		})
+
+		Context("success/failure messages", func() {
+			BeforeEach(func() {
+				context.Type = "section"
+				context.Name = "messages"
+				context.OnSuccess = "successful"
+				context.OnFailure = "failure"
+			})
+			Context("success", func() {
+				It("prints success message", func() {
+					Expect(context.Execute([]string{"command"})).To(Succeed())
+					Expect(out).To(Say("section-end: 'messages' result: 0 message: 'successful'"))
+
+					expectedMRL := mrl{
+						Type:    "section-end",
+						Name:    "messages",
+						Result:  0,
+						Time:    time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+						Message: "successful",
+					}
+					matchMRL(&expectedMRL, `section-end:.*MRL:(.*)`, out.Contents())
+				})
+			})
+			Context("failure", func() {
+				BeforeEach(func() {
+					cmd.RunReturns(fmt.Errorf("command failed"))
+				})
+				It("prints failure message", func() {
+					Expect(context.Execute([]string{"command"})).NotTo(Succeed())
+					Expect(out).To(Say("section-end: 'messages' result: -1 message: 'failure'"))
+
+					expectedMRL := mrl{
+						Type:    "section-end",
+						Name:    "messages",
+						Result:  -1,
+						Time:    time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
+						Message: "failure",
+					}
+					matchMRL(&expectedMRL, `section-end:.*MRL:(.*)`, out.Contents())
+				})
 			})
 		})
 	})
 })
+
+type mrl struct {
+	Type    string    `json:"type"`
+	Name    string    `json:"name"`
+	Result  int       `json:"result"`
+	Time    time.Time `json:"time"`
+	Message string    `json:"message"`
+}
+
+func matchMRL(expectedMRL *mrl, regex string, output []byte) {
+	mrRE := regexp.MustCompile(regex)
+
+	machineReadableMatches := mrRE.FindSubmatch(output)
+
+	Expect(len(machineReadableMatches)).To(Equal(2))
+	var machineReadable mrl
+
+	err := json.Unmarshal(machineReadableMatches[1], &machineReadable)
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(machineReadable.Type).To(Equal(expectedMRL.Type))
+	Expect(machineReadable.Name).To(Equal(expectedMRL.Name))
+	Expect(machineReadable.Result).To(Equal(expectedMRL.Result))
+	Expect(machineReadable.Time).To(Equal(expectedMRL.Time))
+	Expect(machineReadable.Message).To(Equal(expectedMRL.Message))
+}

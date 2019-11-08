@@ -52,8 +52,8 @@ var _ = Describe("log section boundaries", func() {
 			steps.When("I log a section with a missing subcommand")
 
 			steps.Then("the command exits with -1")
-			steps.And("the result contains human readable section begin line")
-			steps.And("the result contains human readable result -1 section end line")
+			steps.And("the result is a machine and human readable section begin line")
+			steps.And("the result contains human and machine readable result -1 section end line")
 		})
 		Scenario("logging a successful sub command", func() {
 			steps.Given("I have the mrlog binary")
@@ -61,9 +61,9 @@ var _ = Describe("log section boundaries", func() {
 			steps.When("I log a section with a successful subcommand")
 
 			steps.Then("the command exits without error")
-			steps.And("the result contains human readable section begin line")
+			steps.And("the result is a machine and human readable section begin line")
 			steps.And("the result contains output from the successful command")
-			steps.And("the result contains human readable successful section end line")
+			steps.And("the result contains human and machine readable successful section end line")
 		})
 		Scenario("logging a failed sub command", func() {
 			steps.Given("I have the mrlog binary")
@@ -71,9 +71,25 @@ var _ = Describe("log section boundaries", func() {
 			steps.When("I log a section with a failed subcommand")
 
 			steps.Then("the command exits with 2")
-			steps.And("the result contains human readable section begin line")
+			steps.And("the result is a machine and human readable section begin line")
 			steps.And("the result contains output from the failed command")
-			steps.And("the result contains human readable result 2 section end line")
+			steps.And("the result contains human and machine readable result 2 section end line")
+		})
+		Scenario("section with successful subcommand shows on-success message", func() {
+			steps.Given("I have the mrlog binary")
+			steps.When("I log a section with a successful subcommand and on-success/on-failure messages")
+			steps.Then("the command exits without error")
+			steps.And("the result is a machine and human readable section begin line")
+			steps.And("the result contains output from the successful command")
+			steps.And("the result contains human and machine readable successful section end line with success message")
+		})
+		Scenario("section with failed subcommand shows on-failed message", func() {
+			steps.Given("I have the mrlog binary")
+			steps.When("I log a section with a failed subcommand and on-success/on-failure messages")
+			steps.Then("the command exits with 2")
+			steps.And("the result is a machine and human readable section begin line")
+			steps.And("the result contains output from the failed command")
+			steps.And("the result contains human and machine readable successful section end line with failed message")
 		})
 	})
 
@@ -149,6 +165,44 @@ var _ = Describe("log section boundaries", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		define.When(`^I log a section with a successful subcommand and on-success/on-failure messages$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"section",
+				"--name",
+				"test-section",
+				"--on-success",
+				"this command was successful",
+				"--on-failure",
+				"this command was a failure",
+				"--",
+				"fixtures/successful-subcommand.sh",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a section with a failed subcommand and on-success/on-failure messages$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"section",
+				"--name",
+				"test-section",
+				"--on-success",
+				"this command was successful",
+				"--on-failure",
+				"this command was a failure",
+				"--",
+				"fixtures/failed-subcommand.sh",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		define.When(`^I log a section without a command$`, func() {
 			logCommand := exec.Command(
 				mrlogPath,
@@ -197,77 +251,99 @@ var _ = Describe("log section boundaries", func() {
 			Eventually(commandSession.Out).Should(
 				Say("section-start: 'test-section'"))
 
-			contents := commandSession.Out.Contents()
+			expectedMRL := mrl{
+				Type: "section-start",
+				Name: "test-section",
+				Time: time.Now(),
+			}
 
-			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
-			Expect(mrRE.Match(contents)).To(BeTrue())
-
-			machineReadableMatches := mrRE.FindSubmatch(contents)
-
-			machineReadable := &struct {
-				Type string `json:"type"`
-				Name string `json:"name"`
-				Time time.Time
-			}{}
-
-			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(machineReadable.Type).To(Equal("section-start"))
-			Expect(machineReadable.Name).To(Equal("test-section"))
-			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
+			matchMRL(&expectedMRL, `\s(?m)MRL:(.*)\n`, commandSession.Out.Contents())
 		})
 
 		define.Then(`^the result is a machine and human readable section end line$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("section-end: 'test-section' result: 1"))
 
-			contents := commandSession.Out.Contents()
+			expectedMRL := mrl{
+				Type:   "section-end",
+				Name:   "test-section",
+				Result: 1,
+				Time:   time.Now(),
+			}
 
-			mrRE := regexp.MustCompile(`\s(?m)MRL:(.*)\n`)
-			Expect(mrRE.Match(contents)).To(BeTrue())
-
-			machineReadableMatches := mrRE.FindSubmatch(contents)
-
-			machineReadable := &struct {
-				Type   string `json:"type"`
-				Name   string `json:"name"`
-				Result int    `json:"result"`
-				Time   time.Time
-			}{}
-
-			err := json.Unmarshal(machineReadableMatches[1], machineReadable)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(machineReadable.Type).To(Equal("section-end"))
-			Expect(machineReadable.Name).To(Equal("test-section"))
-			Expect(machineReadable.Result).To(Equal(1))
-			Expect(machineReadable.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 2))
+			matchMRL(&expectedMRL, `\s(?m)MRL:(.*)\n`, commandSession.Out.Contents())
 		})
 
-		define.Then(`^the result contains human readable section begin line$`, func() {
-			Eventually(commandSession.Out).Should(
-				Say("section-start: 'test-section'"))
-		})
-
-		define.Then(`^the result contains human readable successful section end line$`, func() {
+		define.Then(`^the result contains human and machine readable successful section end line$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("section-end: 'test-section' result: 0 "))
+
+			expectedMRL := mrl{
+				Type:   "section-end",
+				Name:   "test-section",
+				Result: 0,
+				Time:   time.Now(),
+			}
+
+			matchMRL(&expectedMRL, `section-end:.*MRL:(.*)\n`, commandSession.Out.Contents())
 		})
 
-		define.Then(`^the result contains human readable result 1 section end line$`, func() {
-			Eventually(commandSession.Out).Should(
-				Say("section-end: 'test-section' result: 1 "))
-		})
-
-		define.Then(`^the result contains human readable result -1 section end line$`, func() {
+		define.Then(`^the result contains human and machine readable result -1 section end line$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("section-end: 'test-section' result: -1 "))
+
+			expectedMRL := mrl{
+				Type:   "section-end",
+				Name:   "test-section",
+				Result: -1,
+				Time:   time.Now(),
+			}
+
+			matchMRL(&expectedMRL, `section-end:.*MRL:(.*)\n`, commandSession.Out.Contents())
 		})
 
-		define.Then(`^the result contains human readable result 2 section end line$`, func() {
+		define.Then(`^the result contains human and machine readable result 2 section end line$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("section-end: 'test-section' result: 2 "))
+
+			expectedMRL := mrl{
+				Type:   "section-end",
+				Name:   "test-section",
+				Result: 2,
+				Time:   time.Now(),
+			}
+
+			matchMRL(&expectedMRL, `section-end:.*MRL:(.*)\n`, commandSession.Out.Contents())
+		})
+
+		define.Then(`^the result contains human and machine readable successful section end line with success message$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-end: 'test-section' result: 0 message: 'this command was successful'"))
+
+			expectedMRL := mrl{
+				Type:    "section-end",
+				Name:    "test-section",
+				Result:  0,
+				Time:    time.Now(),
+				Message: "this command was successful",
+			}
+
+			matchMRL(&expectedMRL, `section-end:.*MRL:(.*)\n`, commandSession.Out.Contents())
+		})
+
+		define.Then(`^the result contains human and machine readable successful section end line with failed message$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-end: 'test-section' result: 2 message: 'this command was a failure'"))
+
+			expectedMRL := mrl{
+				Type:    "section-end",
+				Name:    "test-section",
+				Result:  2,
+				Time:    time.Now(),
+				Message: "this command was a failure",
+			}
+
+			matchMRL(&expectedMRL, `section-end:.*MRL:(.*)\n`, commandSession.Out.Contents())
 		})
 
 		define.Then(`^the result contains output from the successful command$`, func() {
@@ -284,9 +360,36 @@ var _ = Describe("log section boundaries", func() {
 			Eventually(commandSession.Err).Should(
 				Say("the required flag '--name' was not specified"))
 		})
+
 		define.Then(`tells me a command is required$`, func() {
 			Eventually(commandSession.Err).Should(
 				Say("the section subcommand requires a command parameter '-- <command> ...'"))
 		})
 	})
 })
+
+type mrl struct {
+	Type    string    `json:"type"`
+	Name    string    `json:"name"`
+	Result  int       `json:"result"`
+	Time    time.Time `json:"time"`
+	Message string    `json:"message"`
+}
+
+func matchMRL(expectedMRL *mrl, regex string, output []byte) {
+	mrRE := regexp.MustCompile(regex)
+
+	machineReadableMatches := mrRE.FindSubmatch(output)
+
+	Expect(len(machineReadableMatches)).To(Equal(2))
+	var machineReadable mrl
+
+	err := json.Unmarshal(machineReadableMatches[1], &machineReadable)
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(machineReadable.Type).To(Equal(expectedMRL.Type))
+	Expect(machineReadable.Name).To(Equal(expectedMRL.Name))
+	Expect(machineReadable.Result).To(Equal(expectedMRL.Result))
+	Expect(machineReadable.Time.Unix()).To(BeNumerically("~", expectedMRL.Time.Unix(), 2))
+	Expect(machineReadable.Message).To(Equal(expectedMRL.Message))
+}
