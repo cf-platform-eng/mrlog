@@ -291,7 +291,7 @@ var _ = Describe("log section boundaries", func() {
 		define.Then(`^the result contains human and machine readable result -1 section end line$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("section-end: 'test-section' result: -1 "))
-			
+
 			expectedMRL := mrl{
 				Type:   "section-end",
 				Name:   "test-section",
@@ -305,7 +305,7 @@ var _ = Describe("log section boundaries", func() {
 		define.Then(`^the result contains human and machine readable result 2 section end line$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("section-end: 'test-section' result: 2 "))
-	
+
 			expectedMRL := mrl{
 				Type:   "section-end",
 				Name:   "test-section",
@@ -319,12 +319,12 @@ var _ = Describe("log section boundaries", func() {
 		define.Then(`^the result contains human and machine readable successful section end line with success message$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("section-end: 'test-section' result: 0 message: 'this command was successful'"))
-			
+
 			expectedMRL := mrl{
-				Type:   "section-end",
-				Name:   "test-section",
-				Result: 0,
-				Time:   time.Now(),
+				Type:    "section-end",
+				Name:    "test-section",
+				Result:  0,
+				Time:    time.Now(),
 				Message: "this command was successful",
 			}
 
@@ -336,10 +336,10 @@ var _ = Describe("log section boundaries", func() {
 				Say("section-end: 'test-section' result: 2 message: 'this command was a failure'"))
 
 			expectedMRL := mrl{
-				Type:   "section-end",
-				Name:   "test-section",
-				Result: 2,
-				Time:   time.Now(),
+				Type:    "section-end",
+				Name:    "test-section",
+				Result:  2,
+				Time:    time.Now(),
 				Message: "this command was a failure",
 			}
 
