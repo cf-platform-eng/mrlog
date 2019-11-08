@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	os_exec "os/exec"
-	"time"
 
 	"github.com/cf-platform-eng/mrlog/clock"
 	"github.com/cf-platform-eng/mrlog/exec"
@@ -17,6 +16,8 @@ type Section struct {
 	Type   string
 	Name   string `long:"name" description:"name of the section"`
 	Result int    `long:"result" description:"exitCode code for section"`
+	OnSuccess string `long:"on-success" description:"optional message for successful subcommand"`
+	OnFailure string `long:"on-failure" description:"optional message for failed subcommand"`
 }
 
 type SectionOpt struct {
@@ -31,31 +32,45 @@ type SectionError struct {
 	Err    error
 }
 
-func writeSection(sectionType, sectionName string, exitCode int, time time.Time, out io.Writer) error {
+func writeSection(opts SectionOpt) error {
 	var humanReadable string
-	if sectionType == "start" {
+	if opts.Type == "start" {
 		humanReadable = fmt.Sprintf("section-%s: '%s'",
-			sectionType,
-			sectionName)
-	} else if sectionType == "end" {
-		humanReadable = fmt.Sprintf("section-%s: '%s' result: %d",
-			sectionType,
-			sectionName,
-			exitCode)
+			opts.Type,
+			opts.Name)
+	} else if opts.Type == "end" {
+		if opts.Result == 0 && opts.OnSuccess != "" {
+			humanReadable = fmt.Sprintf("section-%s: '%s' result: %d message: '%s'",
+				opts.Type,
+				opts.Name,
+				opts.Result,
+				opts.OnSuccess)
+		} else if opts.Result != 0 && opts.OnFailure != "" {
+			humanReadable = fmt.Sprintf("section-%s: '%s' result: %d message: '%s'",
+				opts.Type,
+				opts.Name,
+				opts.Result,
+				opts.OnFailure)
+		} else {
+			humanReadable = fmt.Sprintf("section-%s: '%s' result: %d",
+				opts.Type,
+				opts.Name,
+				opts.Result)
+		}
 	} else {
 		return errors.New("invalid section type argument")
 	}
 
-	_, err := fmt.Fprint(out, humanReadable)
+	_, err := fmt.Fprint(opts.Out, humanReadable)
 	if err != nil {
 		return fmt.Errorf("failed to write: %w", err)
 	}
 
 	machineLog := &mrl.MachineReadableLog{
-		Name:   sectionName,
-		Type:   fmt.Sprintf("section-%s", sectionType),
-		Result: exitCode,
-		Time:   time,
+		Name:   opts.Name,
+		Type:   fmt.Sprintf("section-%s", opts.Type),
+		Result: opts.Result,
+		Time:   opts.Clock.Now(),
 	}
 
 	machineLogJSON, err := json.Marshal(machineLog)
@@ -63,7 +78,7 @@ func writeSection(sectionType, sectionName string, exitCode int, time time.Time,
 		return err
 	}
 
-	_, err = fmt.Fprintf(out, " MRL:%s\n", string(machineLogJSON))
+	_, err = fmt.Fprintf(opts.Out, " MRL:%s\n", string(machineLogJSON))
 	if err != nil {
 		return fmt.Errorf("failed to write: %w", err)
 	}
@@ -86,7 +101,9 @@ func (opts *SectionOpt) Execute(args []string) error {
 			return errors.New("the section subcommand requires a command parameter '-- <command> ...'")
 		}
 
-		if err := writeSection("start", opts.Name, 0, opts.Clock.Now(), opts.Out); err != nil {
+		sectionOpts := *opts
+		sectionOpts.Type = "start"
+		if err := writeSection(sectionOpts); err != nil {
 			return err
 		}
 
@@ -107,8 +124,9 @@ func (opts *SectionOpt) Execute(args []string) error {
 			}
 			sectionError = &SectionError{exitCode, err}
 		}
-
-		err = writeSection("end", opts.Name, exitCode, opts.Clock.Now(), opts.Out)
+		sectionOpts.Type = "end"
+		sectionOpts.Result = exitCode
+		err = writeSection(sectionOpts)
 
 		if sectionError != nil {
 			// returning sectionError to propagate subcommand result code
@@ -117,5 +135,5 @@ func (opts *SectionOpt) Execute(args []string) error {
 		return err
 	}
 
-	return writeSection(opts.Type, opts.Name, opts.Result, opts.Clock.Now(), opts.Out)
+	return writeSection(*opts)
 }

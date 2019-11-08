@@ -75,6 +75,22 @@ var _ = Describe("log section boundaries", func() {
 			steps.And("the result contains output from the failed command")
 			steps.And("the result contains human readable result 2 section end line")
 		})
+		Scenario("section with successful subcommand shows on-success message", func() {
+			steps.Given("I have the mrlog binary")
+			steps.When("I log a section with a successful subcommand and on-success/on-failure messages")
+			steps.Then("the command exits without error")
+			steps.And("the result contains human readable section begin line")
+			steps.And("the result contains output from the successful command")			
+			steps.And("the result contains human readable successful section end line with success message")			
+		})
+		Scenario("section with failed subcommand shows on-failed message", func() {
+			steps.Given("I have the mrlog binary")
+			steps.When("I log a section with a failed subcommand and on-success/on-failure messages")
+			steps.Then("the command exits with 2")
+			steps.And("the result contains human readable section begin line")
+			steps.And("the result contains output from the failed command")			
+			steps.And("the result contains human readable successful section end line with failed message")			
+		})
 	})
 
 	steps.Define(func(define Definitions) {
@@ -140,6 +156,44 @@ var _ = Describe("log section boundaries", func() {
 				"section",
 				"--name",
 				"test-section",
+				"--",
+				"fixtures/failed-subcommand.sh",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a section with a successful subcommand and on-success/on-failure messages$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"section",
+				"--name",
+				"test-section",
+				"--on-success",
+				"this command was successful",
+				"--on-failure",
+				"this command was a failure",
+				"--",
+				"fixtures/successful-subcommand.sh",
+			)
+
+			var err error
+			commandSession, err = gexec.Start(logCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		define.When(`^I log a section with a failed subcommand and on-success/on-failure messages$`, func() {
+			logCommand := exec.Command(
+				mrlogPath,
+				"section",
+				"--name",
+				"test-section",
+				"--on-success",
+				"this command was successful",
+				"--on-failure",
+				"this command was a failure",
 				"--",
 				"fixtures/failed-subcommand.sh",
 			)
@@ -270,6 +324,16 @@ var _ = Describe("log section boundaries", func() {
 				Say("section-end: 'test-section' result: 2 "))
 		})
 
+		define.Then(`^the result contains human readable successful section end line with success message$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-end: 'test-section' result: 0 message: 'this command was successful'"))
+		})
+
+		define.Then(`^the result contains human readable successful section end line with failed message$`, func() {
+			Eventually(commandSession.Out).Should(
+				Say("section-end: 'test-section' result: 2 message: 'this command was a failure'"))
+		})
+
 		define.Then(`^the result contains output from the successful command$`, func() {
 			Eventually(commandSession.Out).Should(
 				Say("This is a successful command"))
@@ -284,6 +348,7 @@ var _ = Describe("log section boundaries", func() {
 			Eventually(commandSession.Err).Should(
 				Say("the required flag '--name' was not specified"))
 		})
+
 		define.Then(`tells me a command is required$`, func() {
 			Eventually(commandSession.Err).Should(
 				Say("the section subcommand requires a command parameter '-- <command> ...'"))

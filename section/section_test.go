@@ -8,10 +8,10 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/cf-platform-eng/mrlog/clock/clockfakes"
-	"github.com/cf-platform-eng/mrlog/exec/execfakes"
 	"github.com/cf-platform-eng/mrlog/section"
 	"github.com/cf-platform-eng/mrlog/section/sectionfakes"
+	"github.com/cf-platform-eng/mrlog/exec/execfakes"
+	"github.com/cf-platform-eng/mrlog/clock/clockfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -23,7 +23,7 @@ var _ = Describe("Section", func() {
 	var (
 		out     *Buffer
 		context *section.SectionOpt
-		cmd     *execfakes.FakeCmd
+		cmd *execfakes.FakeCmd
 	)
 
 	BeforeEach(func() {
@@ -38,7 +38,7 @@ var _ = Describe("Section", func() {
 		context = &section.SectionOpt{
 			Out:   out,
 			Clock: clock,
-			Exec:  exec,
+			Exec: exec,
 		}
 	})
 
@@ -181,6 +181,32 @@ var _ = Describe("Section", func() {
 				err := context.Execute([]string{"command"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("command failed"))
+			})
+		})
+
+		Context("success/failure messages", func() {
+			BeforeEach(func() {
+				context.Type = "section"
+				context.Name = "messages"
+				context.OnSuccess = "successful"
+				context.OnFailure = "failure"
+			})
+			Context("success", func() { 
+				It("prints success message", func() {
+					err := context.Execute([]string{"command"})
+					Expect(err).ToNot(HaveOccurred())
+					Expect(out).To(Say("section-end: 'messages' result: 0 message: 'successful'"))
+				})
+			})
+			Context("failure", func() {
+				BeforeEach(func() {
+					cmd.RunReturns(fmt.Errorf("command failed"))
+				})
+				It("prints failure message", func() {
+					err := context.Execute([]string{"command"})
+					Expect(err).To(HaveOccurred())
+					Expect(out).To(Say("section-end: 'messages' result: -1 message: 'failure'"))
+				})
 			})
 		})
 	})
