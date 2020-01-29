@@ -167,8 +167,8 @@ var _ = Describe("Section", func() {
 			It("fails when command run fails", func() {
 				err := context.Execute([]string{"command"})
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("command failed"))
 				Expect(out).To(Say("section-start: 'install'"))
+				Expect(out).To(Say("command failed"))
 				Expect(out).To(Say("section-end: 'install' result: -1"))
 
 				startMRL := mrl{

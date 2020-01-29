@@ -90,7 +90,10 @@ func writeSection(opts SectionOpt) error {
 
 func (e *SectionError) Unwrap() error { return e.Err }
 func (e *SectionError) Error() string {
-	return fmt.Sprintf("Section subcommand failed with %d: %s", e.Retval, e.Err)
+	// This returns an empty string so it does not print the error outside
+	// of the section-end block. The error information is printed inside the
+	// SectionOpt.Execute function below
+	return ""
 }
 
 func (opts *SectionOpt) Execute(args []string) error {
@@ -124,6 +127,7 @@ func (opts *SectionOpt) Execute(args []string) error {
 			} else {
 				exitCode = -1
 			}
+			fmt.Fprintf(opts.Out, "Section subcommand failed with %d: %s\n", exitCode, err)
 			sectionError = &SectionError{exitCode, err}
 		}
 		sectionOpts.Type = "end"
@@ -131,7 +135,7 @@ func (opts *SectionOpt) Execute(args []string) error {
 		err = writeSection(sectionOpts)
 
 		if sectionError != nil {
-			// returning sectionError to propagate subcommand result code
+			// returning sectionError to propagate the resulting non-zero result code
 			return sectionError
 		}
 		return err
