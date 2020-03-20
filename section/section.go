@@ -10,6 +10,8 @@ import (
 	"github.com/cf-platform-eng/mrlog/clock"
 	"github.com/cf-platform-eng/mrlog/exec"
 	"github.com/cf-platform-eng/mrlog/mrl"
+
+	"github.com/fatih/color"
 )
 
 type Section struct {
@@ -18,6 +20,7 @@ type Section struct {
 	Result    int    `long:"result" description:"exitCode code for section"`
 	OnSuccess string `long:"on-success" description:"optional message for successful subcommand"`
 	OnFailure string `long:"on-failure" description:"optional message for failed subcommand"`
+	NoColor   bool   `long:"no-color" description:"do not use colors"`
 }
 
 type SectionOpt struct {
@@ -40,31 +43,31 @@ func writeSection(opts SectionOpt) error {
 		Time:   opts.Clock.Now(),
 	}
 
+	newline := "\n"
 	var humanReadable string
 	if opts.Type == "start" {
 		humanReadable = fmt.Sprintf("section-%s: '%s'",
 			opts.Type,
 			opts.Name)
 	} else if opts.Type == "end" {
+		newline = "\n\n"
+		message := ""
 		if opts.Result == 0 && opts.OnSuccess != "" {
-			humanReadable = fmt.Sprintf("section-%s: '%s' result: %d message: '%s'",
-				opts.Type,
-				opts.Name,
-				opts.Result,
-				opts.OnSuccess)
+			message = fmt.Sprintf(" message: '%s'", opts.OnSuccess)
 			machineLog.Message = opts.OnSuccess
 		} else if opts.Result != 0 && opts.OnFailure != "" {
-			humanReadable = fmt.Sprintf("section-%s: '%s' result: %d message: '%s'",
-				opts.Type,
-				opts.Name,
-				opts.Result,
-				opts.OnFailure)
+			message = fmt.Sprintf(" message: '%s'", opts.OnFailure)
 			machineLog.Message = opts.OnFailure
+		}
+		humanReadable = fmt.Sprintf("section-%s: '%s' result: %d%s",
+			opts.Type,
+			opts.Name,
+			opts.Result,
+			message)
+		if opts.Result == 0 {
+			humanReadable = color.GreenString(humanReadable)
 		} else {
-			humanReadable = fmt.Sprintf("section-%s: '%s' result: %d",
-				opts.Type,
-				opts.Name,
-				opts.Result)
+			humanReadable = color.RedString(humanReadable)
 		}
 	} else {
 		return errors.New("invalid section type argument")
@@ -80,7 +83,7 @@ func writeSection(opts SectionOpt) error {
 		return err
 	}
 
-	_, err = fmt.Fprintf(opts.Out, " MRL:%s\n", string(machineLogJSON))
+	_, err = fmt.Fprintf(opts.Out, " MRL:%s%s", string(machineLogJSON), newline)
 	if err != nil {
 		return fmt.Errorf("failed to write: %w", err)
 	}
@@ -99,6 +102,10 @@ func (e *SectionError) Error() string {
 func (opts *SectionOpt) Execute(args []string) error {
 	if opts.Name == "" {
 		return errors.New("missing section name")
+	}
+
+	if opts.NoColor {
+		color.NoColor = true
 	}
 
 	if opts.Type == "section" {

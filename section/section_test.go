@@ -11,6 +11,7 @@ import (
 	"github.com/cf-platform-eng/mrlog/exec/execfakes"
 	"github.com/cf-platform-eng/mrlog/section"
 	"github.com/cf-platform-eng/mrlog/section/sectionfakes"
+	"github.com/fatih/color"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -91,11 +92,12 @@ var _ = Describe("Section", func() {
 			context.Result = 1
 			context.Type = "end"
 			context.Name = "install"
+			color.NoColor = false
 		})
 
 		It("logs the section end", func() {
 			Expect(context.Execute([]string{})).To(Succeed())
-			Expect(out).To(Say("section-end: 'install' result: 1"))
+			Expect(out.Contents()).To(ContainSubstring(color.RedString("section-end: 'install' result: 1")))
 
 			expectedMRL := mrl{
 				Type:   "section-end",
@@ -104,7 +106,7 @@ var _ = Describe("Section", func() {
 				Result: 1,
 			}
 
-			matchMRL(&expectedMRL, `\s(?m)MRL:(.*)\n`, out.Contents())
+			matchMRL(&expectedMRL, `\s(?m)MRL:(.*)\n\n`, out.Contents())
 		})
 	})
 
@@ -131,6 +133,7 @@ var _ = Describe("Section", func() {
 		BeforeEach(func() {
 			context.Type = "section"
 			context.Name = "install"
+			color.NoColor = false
 		})
 
 		It("fails given no command", func() {
@@ -142,7 +145,7 @@ var _ = Describe("Section", func() {
 		It("succeeds given command", func() {
 			Expect(context.Execute([]string{"command"})).To(Succeed())
 			Expect(out).To(Say("section-start: 'install'"))
-			Expect(out).To(Say("section-end: 'install' result: 0"))
+			Expect(out.Contents()).To(ContainSubstring(color.GreenString("section-end: 'install' result: 0")))
 
 			startMRL := mrl{
 				Type: "section-start",
@@ -156,12 +159,13 @@ var _ = Describe("Section", func() {
 				Time:   time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 				Result: 0,
 			}
-			matchMRL(&endMRL, `section-end:.*MRL:(.*)`, out.Contents())
+			matchMRL(&endMRL, `section-end:.*MRL:(.*)\n\n`, out.Contents())
 		})
 
 		Context("reports failure to execute subcommand", func() {
 			BeforeEach(func() {
 				cmd.RunReturns(fmt.Errorf("command failed"))
+				color.NoColor = false
 			})
 
 			It("fails when command run fails", func() {
@@ -169,7 +173,7 @@ var _ = Describe("Section", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(Say("section-start: 'install'"))
 				Expect(out).To(Say("command failed"))
-				Expect(out).To(Say("section-end: 'install' result: -1"))
+				Expect(out.Contents()).To(ContainSubstring(color.RedString("section-end: 'install' result: -1")))
 
 				startMRL := mrl{
 					Type: "section-start",
@@ -183,7 +187,7 @@ var _ = Describe("Section", func() {
 					Time:   time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 					Result: -1,
 				}
-				matchMRL(&endMRL, `section-end:.*MRL:(.*)`, out.Contents())
+				matchMRL(&endMRL, `section-end:.*MRL:(.*)\n\n`, out.Contents())
 			})
 		})
 
@@ -193,11 +197,12 @@ var _ = Describe("Section", func() {
 				context.Name = "messages"
 				context.OnSuccess = "successful"
 				context.OnFailure = "failure"
+				color.NoColor = false
 			})
 			Context("success", func() {
 				It("prints success message", func() {
 					Expect(context.Execute([]string{"command"})).To(Succeed())
-					Expect(out).To(Say("section-end: 'messages' result: 0 message: 'successful'"))
+					Expect(out.Contents()).To(ContainSubstring(color.GreenString("section-end: 'messages' result: 0 message: 'successful'")))
 
 					expectedMRL := mrl{
 						Type:    "section-end",
@@ -206,16 +211,17 @@ var _ = Describe("Section", func() {
 						Time:    time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 						Message: "successful",
 					}
-					matchMRL(&expectedMRL, `section-end:.*MRL:(.*)`, out.Contents())
+					matchMRL(&expectedMRL, `section-end:.*MRL:(.*)\n\n`, out.Contents())
 				})
 			})
 			Context("failure", func() {
 				BeforeEach(func() {
 					cmd.RunReturns(fmt.Errorf("command failed"))
+					color.NoColor = false
 				})
 				It("prints failure message", func() {
 					Expect(context.Execute([]string{"command"})).NotTo(Succeed())
-					Expect(out).To(Say("section-end: 'messages' result: -1 message: 'failure'"))
+					Expect(out.Contents()).To(ContainSubstring(color.RedString("section-end: 'messages' result: -1 message: 'failure'")))
 
 					expectedMRL := mrl{
 						Type:    "section-end",
@@ -224,10 +230,36 @@ var _ = Describe("Section", func() {
 						Time:    time.Date(1973, 11, 29, 10, 15, 01, 00, time.UTC),
 						Message: "failure",
 					}
-					matchMRL(&expectedMRL, `section-end:.*MRL:(.*)`, out.Contents())
+					matchMRL(&expectedMRL, `section-end:.*MRL:(.*)\n\n`, out.Contents())
 				})
 			})
 		})
+
+		Context("no color flag", func() {
+			BeforeEach(func() {
+				context.Type = "section"
+				context.Name = "messages"
+				context.OnSuccess = "successful"
+				context.OnFailure = "failure"
+				context.NoColor = true
+			})
+			Context("success", func() {
+				It("prints success message without colors", func() {
+					Expect(context.Execute([]string{"command"})).To(Succeed())
+					Expect(out).To(Say("\nsection-end: 'messages' result: 0 message: 'successful'"))
+				})
+			})
+			Context("failure", func() {
+				BeforeEach(func() {
+					cmd.RunReturns(fmt.Errorf("command failed"))
+				})
+				It("prints failure message without colors", func() {
+					Expect(context.Execute([]string{"command"})).NotTo(Succeed())
+					Expect(out).To(Say("\nsection-end: 'messages' result: -1 message: 'failure'"))
+				})
+			})
+		})
+
 	})
 })
 
