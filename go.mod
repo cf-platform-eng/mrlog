@@ -7,7 +7,7 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/golang/protobuf v1.3.5 // indirect
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/onsi/ginkgo v1.12.0
+	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.0
 
 )
