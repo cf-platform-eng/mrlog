@@ -6,7 +6,7 @@ require (
 	github.com/bunniesandbeatings/goerkin v0.1.4-beta
 	github.com/fatih/color v1.9.0
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/onsi/ginkgo v1.13.0
+	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
 
 )
