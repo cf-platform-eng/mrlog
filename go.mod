@@ -1,6 +1,6 @@
 module github.com/cf-platform-eng/mrlog
 
-go 1.12
+go 1.14
 
 require (
 	github.com/bunniesandbeatings/goerkin v0.1.4-beta
