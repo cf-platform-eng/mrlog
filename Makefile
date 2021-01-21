@@ -32,7 +32,10 @@ deps-modules: deps-goimports deps-go-binary
 deps-counterfeiter: deps-modules
 	command -v counterfeiter >/dev/null 2>&1 || go get -u github.com/maxbrunsfeld/counterfeiter/v6
 
-deps: deps-modules deps-counterfeiter
+deps-ginkgo: deps-go-binary
+	command -v ginkgo >/dev/null 2>&1 || go get -u github.com/onsi/ginkgo/ginkgo github.com/onsi/gomega
+
+deps: deps-modules deps-counterfeiter deps-ginkgo
 
 
 # #### BUILD ####
