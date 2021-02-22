@@ -52,7 +52,7 @@ func main() {
 	_, err = parser.AddCommand(
 		"section-end",
 		"log a section ending",
-		"log a section endging in MRL format",
+		"log a section ending in MRL format",
 		&section.SectionOpt{
 			Section: section.Section{
 				Type: "end",
