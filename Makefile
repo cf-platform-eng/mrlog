@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-GO-VER = go1.17
+GO-VER = go1.19
 
 default: build
 
@@ -76,3 +76,7 @@ test: deps lint units features
 
 lint: deps-goimports
 	git ls-files | grep '.go$$' | xargs goimports -l -w
+
+.PHONY: set-pipeline
+set-pipeline: ci/pipeline.yaml
+	fly -t ppe-isv set-pipeline -p mrlog -c ci/pipeline.yaml
