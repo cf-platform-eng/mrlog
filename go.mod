@@ -7,7 +7,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.20.2
+	github.com/onsi/gomega v1.21.1
 )
 
 require (
