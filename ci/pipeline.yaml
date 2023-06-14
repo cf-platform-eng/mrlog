@@ -65,6 +65,7 @@ resources:
     source:
       repository: cf-platform-eng/mrlog
       access_token: ((github.access_token))
+      disable_forks: true
 
 jobs:
   - name: test
