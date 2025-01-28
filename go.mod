@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/bunniesandbeatings/goerkin v0.1.4-beta
 	github.com/fatih/color v1.15.0
-	github.com/jessevdk/go-flags v1.5.0
+	github.com/jessevdk/go-flags v1.6.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.28.0
 )
