@@ -63,10 +63,10 @@ resources:
     type: registry-image
     icon: docker
     source:
-      repository: mirror.gcr.io/golang
+      repository: ((artifactory.registry_mirror))/golang
       tag: 1.23
-      username: _json_key
-      password: ((gcp_artifact_registry.service_account_key))
+      username: ((artifactory.production_username))
+      password: ((artifactory.production_password))
 
   - name: pull-requests
     type: pull-request
@@ -122,6 +122,7 @@ jobs:
           - get: ubuntu-image
             params:
               format: oci
+          - get: oci-build-task
           - task: build-oci
             privileged: true
             image: oci-build-task
@@ -129,11 +130,12 @@ jobs:
               platform: linux
               inputs:
                 - name: source
+                - name: build
                 - name: ubuntu-image
               outputs:
                 - name: image
               params:
-                CONTEXT: source
+                CONTEXT: .
                 DOCKERFILE: source/Dockerfile
                 IMAGE_ARG_ubuntu_image: ubuntu-image/image.tar
               run:
@@ -176,6 +178,7 @@ jobs:
             - get: ubuntu-image
               params:
                 format: oci
+            - get: oci-build-task
             - task: build-oci
               privileged: true
               image: oci-build-task
@@ -183,11 +186,12 @@ jobs:
                 platform: linux
                 inputs:
                   - name: source
+                  - name: build
                   - name: ubuntu-image
                 outputs:
                   - name: image
                 params:
-                  CONTEXT: source
+                  CONTEXT: .
                   DOCKERFILE: source/Dockerfile
                   IMAGE_ARG_ubuntu_image: ubuntu-image/image.tar
                 run:
