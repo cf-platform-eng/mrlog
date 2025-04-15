@@ -15,5 +15,5 @@ run:
       make build-all
 
 outputs:
-  - name: build
+  - name: mrlog-build
     path: source/build

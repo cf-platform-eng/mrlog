@@ -125,7 +125,7 @@ jobs:
             name: version/version
             tag: version/version
             globs:
-              - build/*
+              - mrlog-build/*
         - do:
           - file: version/version
             load_var: image_version
@@ -140,7 +140,7 @@ jobs:
               platform: linux
               inputs:
                 - name: source
-                - name: build
+                - name: mrlog-build
                 - name: ubuntu-image
               outputs:
                 - name: image
@@ -181,7 +181,7 @@ jobs:
             name: version/version
             tag: version/version
             globs:
-              - build/*
+              - mrlog-build/*
         - do:
             - file: version/version
               load_var: image_version
@@ -196,7 +196,7 @@ jobs:
                 platform: linux
                 inputs:
                   - name: source
-                  - name: build
+                  - name: mrlog-build
                   - name: ubuntu-image
                 outputs:
                   - name: image

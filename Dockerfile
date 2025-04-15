@@ -4,6 +4,6 @@ FROM ${ubuntu_image}
 
 LABEL maintainer="Tanzu ISV Partner Engineering Team <tanzu-isv-engineering@groups.vmware.com>"
 
-COPY build/mrlog-linux /usr/local/bin/mrlog
+COPY mrlog-build/mrlog-linux /usr/local/bin/mrlog
 
 ENTRYPOINT [ "mrlog" ]
