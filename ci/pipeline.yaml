@@ -66,6 +66,7 @@ resources:
     icon: oci
     source:
       repository: ((artifactory.registry_mirror))/ubuntu
+      tag: latest
       username: ((artifactory.production_username))
       password: ((artifactory.production_password))
 
